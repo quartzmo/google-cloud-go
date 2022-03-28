@@ -138,10 +138,8 @@ func (g *GapicGenerator) Regen(ctx context.Context) error {
 		}
 	}
 
-	if !g.onlyGenerateGapic {
-		if err := g.regenSnippets(ctx); err != nil {
-			return err
-		}
+	if err := g.regenSnippets(ctx); err != nil {
+		return err
 	}
 
 	if !g.onlyGenerateGapic {

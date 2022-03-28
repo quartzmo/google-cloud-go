@@ -15,9 +15,12 @@
 // Package gensnippets processes GoDoc examples.
 package gensnippets
 
+//go:generate protoc --go_out=. --go_opt=paths=source_relative metadata/metadata.proto
+
 import (
 	"bytes"
 	"fmt"
+	"go/ast"
 	"go/format"
 	"go/printer"
 	"go/token"
@@ -64,11 +67,19 @@ func Generate(rootDir, outDir string, apiShortnames map[string]string) error {
 	trimPrefix := "cloud.google.com/go"
 	errs := []error{}
 	for _, dir := range dirs {
+		if !strings.Contains(dir, "secretmanager") {
+			continue
+		}
 		// Load does not look at nested modules.
 		pis, err := pkgload.Load("./...", dir, nil)
 		if err != nil {
 			return fmt.Errorf("failed to load packages: %v", err)
 		}
+		version, err := getModuleVersion(dir)
+		if err != nil {
+			return err
+		}
+		_ = version
 		for _, pi := range pis {
 			if eErrs := processExamples(pi.Doc, pi.Fset, trimPrefix, rootDir, outDir, apiShortnames); len(eErrs) > 0 {
 				errs = append(errs, fmt.Errorf("%v", eErrs))
@@ -105,15 +116,21 @@ var skip = map[string]bool{
 	"cloud.google.com/go/translate":                true, // Has newer version.
 }
 
+func getModuleVersion(dir string) (string, error) {
+	return "", nil
+}
+
 func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir, outDir string, apiShortnames map[string]string) []error {
 	if skip[pkg.ImportPath] {
 		return nil
 	}
 	trimmed := strings.TrimPrefix(pkg.ImportPath, trimPrefix)
-	regionTags, err := computeRegionTags(rootDir, trimmed, apiShortnames)
+	apiInfo, err := buildAPIInfo(rootDir, trimmed, apiShortnames, pkg)
 	if err != nil {
 		return []error{err}
 	}
+
+	regionTags := apiInfo.RegionTags()
 	if len(regionTags) == 0 {
 		// Nothing to do.
 		return nil
@@ -143,8 +160,7 @@ func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir,
 	return errs
 }
 
-// computeRegionTags gets the region tags for the given path, keyed by client name and method name.
-func computeRegionTags(rootDir, path string, apiShortnames map[string]string) (regionTags map[string]map[string]string, err error) {
+func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *doc.Package) (*apiInfo, error) {
 	metadataPath := filepath.Join(rootDir, path, "gapic_metadata.json")
 	f, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -164,28 +180,132 @@ func computeRegionTags(rootDir, path string, apiShortnames map[string]string) (r
 	protoParts := strings.Split(m.GetProtoPackage(), ".")
 	apiVersion := protoParts[len(protoParts)-1]
 
-	regionTags = map[string]map[string]string{}
+	ai := &apiInfo{
+		protoPkg:  m.ProtoPackage,
+		libPkg:    m.LibraryPackage,
+		shortName: shortname,
+		// TODO: version
+	}
 	for sName, s := range m.GetServices() {
+		svc := &service{
+			protoName: sName,
+		}
 		for _, c := range s.GetClients() {
-			for rpc, methods := range c.GetRpcs() {
+			svc.name = c.LibraryClient
+			client := pkgClient(pkg, c.LibraryClient)
+			for rpcName, methods := range c.GetRpcs() {
+				r := &method{
+					name:   rpcName,
+					doc:    client.MethodDoc(rpcName),
+					params: client.MethodParams(rpcName),
+					result: client.ResultType(rpcName),
+				}
 				if len(methods.GetMethods()) != 1 {
 					return nil, fmt.Errorf("%s %s %s found %d methods", m.GetLibraryPackage(), sName, c.GetLibraryClient(), len(methods.GetMethods()))
 				}
-				if methods.GetMethods()[0] != rpc {
-					return nil, fmt.Errorf("%s %s %s %q does not match %q", m.GetLibraryPackage(), sName, c.GetLibraryClient(), methods.GetMethods()[0], rpc)
+				if methods.GetMethods()[0] != rpcName {
+					return nil, fmt.Errorf("%s %s %s %q does not match %q", m.GetLibraryPackage(), sName, c.GetLibraryClient(), methods.GetMethods()[0], rpcName)
 				}
 
 				// Every Go method is synchronous.
-				regionTag := fmt.Sprintf("%s_%s_generated_%s_%s_sync", shortname, apiVersion, sName, rpc)
+				r.regionTag = fmt.Sprintf("%s_%s_generated_%s_%s_sync", shortname, apiVersion, sName, rpcName)
+				svc.methods = append(svc.methods, r)
+			}
+		}
+		ai.protoServices = append(ai.protoServices, svc)
+	}
+	return ai, nil
+}
 
-				if regionTags[c.GetLibraryClient()] == nil {
-					regionTags[c.GetLibraryClient()] = map[string]string{}
+type client struct {
+	dt *doc.Type
+}
+
+func pkgClient(pkg *doc.Package, name string) *client {
+	for _, v := range pkg.Types {
+		if v.Name == name {
+			return &client{v}
+		}
+	}
+	panic(fmt.Sprintf("unable to lookup client %v", name))
+}
+
+func (c *client) MethodDoc(name string) string {
+	for _, v := range c.dt.Methods {
+		if v.Name == name {
+			return v.Doc
+		}
+	}
+	panic(fmt.Sprintf("unable to lookup method doc for: %v", name))
+}
+
+func (c *client) MethodParams(name string) []*param {
+	for _, v := range c.dt.Methods {
+		if v.Name != name {
+			continue
+		}
+		var params []*param
+		for _, p := range v.Decl.Type.Params.List {
+			se, ok := p.Type.(*ast.SelectorExpr)
+			if ok {
+				params = append(params, &param{
+					name:  p.Names[0].Name,
+					pType: fmt.Sprintf("%s.%s", se.X, se.Sel),
+				})
+				continue
+			}
+			ste, ok := p.Type.(*ast.StarExpr)
+			if ok {
+				se, ok := ste.X.(*ast.SelectorExpr)
+				if ok {
+					params = append(params, &param{
+						name:  p.Names[0].Name,
+						pType: fmt.Sprintf("%s.%s", se.X, se.Sel),
+					})
+					continue
 				}
-				regionTags[c.GetLibraryClient()][rpc] = regionTag
+			}
+			e, ok := p.Type.(*ast.Ellipsis)
+			if ok {
+				se, ok := e.Elt.(*ast.SelectorExpr)
+				if ok {
+					params = append(params, &param{
+						name:  p.Names[0].Name,
+						pType: fmt.Sprintf("...%s.%s", se.X, se.Sel),
+					})
+					continue
+				}
+			}
+			panic("unable to read param type info")
+		}
+		return params
+	}
+	panic(fmt.Sprintf("unable to lookup method params for: %v", name))
+}
+
+func (c *client) ResultType(name string) string {
+	for _, v := range c.dt.Methods {
+		if v.Name != name {
+			continue
+		}
+		log.Println("Got here")
+		res := v.Decl.Type.Results
+		if res != nil {
+			se, ok := res.List[0].Type.(*ast.StarExpr)
+			if ok {
+				selExp, ok := se.X.(*ast.SelectorExpr)
+				if ok {
+					return fmt.Sprintf("%s.%s", selExp.X, selExp.Sel)
+				}
+				ident, ok := se.X.(*ast.Ident)
+				if ok {
+					return ident.Name
+				}
+				panic("starExpr could not be parsed")
 			}
 		}
 	}
-	return regionTags, nil
+	return ""
 }
 
 func writeExamples(outDir string, exs []*doc.Example, fset *token.FileSet, regionTag string) error {
