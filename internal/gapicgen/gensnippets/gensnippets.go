@@ -200,12 +200,10 @@ func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *do
 			methods:   make(map[string]*method),
 		}
 		for _, c := range s.GetClients() {
-			svc.name = c.LibraryClient
 			client := pkgClient(pkg, c.LibraryClient)
 			ai.protoServices[c.LibraryClient] = svc
 			for rpcName, methods := range c.GetRpcs() {
 				r := &method{
-					name:   rpcName,
 					doc:    client.MethodDoc(rpcName),
 					params: client.MethodParams(rpcName),
 					result: client.ResultType(rpcName),

@@ -48,28 +48,28 @@ func (ai *apiInfo) ToSnippetMetadata() *metadata.Index {
 		},
 	}
 
-	for _, service := range ai.protoServices {
-		for _, method := range service.methods {
+	for clientShortName, service := range ai.protoServices {
+		for methodShortName, method := range service.methods {
 			snip := &metadata.Snippet{
 				RegionTag:   method.regionTag,
-				Title:       fmt.Sprintf("%s %s Sample", ai.shortName, method.name),
+				Title:       fmt.Sprintf("%s %s Sample", ai.shortName, methodShortName),
 				Description: method.doc,
-				File:        fmt.Sprintf("%s/%s/main.go", service.name, method.name),
+				File:        fmt.Sprintf("%s/%s/main.go", clientShortName, methodShortName),
 				Language:    metadata.Language_GO,
 				Canonical:   false,
 				Origin:      *metadata.Snippet_API_DEFINITION.Enum(),
 				ClientMethod: &metadata.ClientMethod{
-					ShortName:  method.name,
-					FullName:   fmt.Sprintf("%s.%s.%s", ai.protoPkg, strings.Title(ai.shortName), method.name),
+					ShortName:  methodShortName,
+					FullName:   fmt.Sprintf("%s.%s.%s", ai.protoPkg, strings.Title(ai.shortName), methodShortName),
 					Async:      false,
 					ResultType: method.result,
 					Client: &metadata.ServiceClient{
-						ShortName: service.name,
-						FullName:  fmt.Sprintf("%s.%s", ai.protoPkg, service.name),
+						ShortName: clientShortName,
+						FullName:  fmt.Sprintf("%s.%s", ai.protoPkg, clientShortName),
 					},
 					Method: &metadata.Method{
-						ShortName: method.name,
-						FullName:  fmt.Sprintf("%s.%s.%s", ai.protoPkg, service.name, method.name),
+						ShortName: methodShortName,
+						FullName:  fmt.Sprintf("%s.%s.%s", ai.protoPkg, clientShortName, methodShortName),
 						Service: &metadata.Service{
 							ShortName: service.protoName,
 							FullName:  fmt.Sprintf("%s.%s", ai.protoPkg, service.protoName),
@@ -105,9 +105,6 @@ func (ai *apiInfo) protoVersion() string {
 type service struct {
 	// protoName is the name of the proto service.
 	protoName string
-	// TODO: remove if unused
-	// name is the short name of the corresponding gapic client for the proto service.
-	name string
 	// methods is a map of gapic method short names to method structs.
 	methods map[string]*method
 }
@@ -115,9 +112,6 @@ type service struct {
 // method associates elements of gapic client methods (docs, params and return types)
 // with snippet file details such as the region tag string and line numbers.
 type method struct {
-	// TODO: remove if unused
-	// name is the name of the method.
-	name string
 	// doc is the documention for the methods.
 	doc string
 	// regionTag is the region tag that will be used for the generated snippet.
