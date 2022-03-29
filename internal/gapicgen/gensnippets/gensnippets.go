@@ -122,7 +122,7 @@ func getModuleVersion(dir string) (string, error) {
 		return "", err
 	}
 	version := node.Scope.Objects["Version"].Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
-	version = strings.Trim(version, "\"")
+	version = strings.Trim(version, `"`)
 	return version, nil
 }
 
@@ -147,6 +147,7 @@ func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir,
 
 	var errs []error
 	for _, t := range pkg.Types {
+		svc := apiInfo.protoServices[t.Name]
 		for _, m := range t.Methods {
 			if len(m.Examples) == 0 {
 				// Nothing to do for this method.
@@ -158,7 +159,7 @@ func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir,
 				errs = append(errs, fmt.Errorf("could not find region tag for %s %s.%s", pkg.ImportPath, t.Name, m.Name))
 				continue
 			}
-			if err := writeExamples(dir, m.Examples, fset, regionTag); err != nil {
+			if err := writeExamples(dir, m.Examples, fset, regionTag, svc.methods[m.Name]); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -187,18 +188,21 @@ func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *do
 	apiVersion := protoParts[len(protoParts)-1]
 
 	ai := &apiInfo{
-		protoPkg:  m.ProtoPackage,
-		libPkg:    m.LibraryPackage,
-		shortName: shortname,
-		version:   version,
+		protoPkg:      m.ProtoPackage,
+		libPkg:        m.LibraryPackage,
+		shortName:     shortname,
+		version:       version,
+		protoServices: make(map[string]*service),
 	}
 	for sName, s := range m.GetServices() {
 		svc := &service{
 			protoName: sName,
+			methods:   make(map[string]*method),
 		}
 		for _, c := range s.GetClients() {
 			svc.name = c.LibraryClient
 			client := pkgClient(pkg, c.LibraryClient)
+			ai.protoServices[c.LibraryClient] = svc
 			for rpcName, methods := range c.GetRpcs() {
 				r := &method{
 					name:   rpcName,
@@ -215,10 +219,9 @@ func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *do
 
 				// Every Go method is synchronous.
 				r.regionTag = fmt.Sprintf("%s_%s_generated_%s_%s_sync", shortname, apiVersion, sName, rpcName)
-				svc.methods = append(svc.methods, r)
+				svc.methods[rpcName] = r
 			}
 		}
-		ai.protoServices = append(ai.protoServices, svc)
 	}
 	return ai, nil
 }
@@ -313,7 +316,7 @@ func (c *client) ResultType(name string) string {
 	return ""
 }
 
-func writeExamples(outDir string, exs []*doc.Example, fset *token.FileSet, regionTag string) error {
+func writeExamples(outDir string, exs []*doc.Example, fset *token.FileSet, regionTag string, method *method) error {
 	for _, ex := range exs {
 		dir := outDir
 		if len(exs) > 1 {
@@ -343,6 +346,7 @@ func writeExamples(outDir string, exs []*doc.Example, fset *token.FileSet, regio
 			}
 			s = builder.String()
 		}
+
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
@@ -352,7 +356,12 @@ func writeExamples(outDir string, exs []*doc.Example, fset *token.FileSet, regio
 			return err
 		}
 		defer f.Close()
-		if _, err := f.WriteString(header()); err != nil {
+
+		h := header()
+		method.regionTagStart = strings.Count(h, "\n") + 1
+		// Add 4 to the end of the snippet body to account for newlines that surround region tags.
+		method.regionTagEnd = method.regionTagStart + strings.Count(s, "\n") + 4
+		if _, err := f.WriteString(h); err != nil {
 			return err
 		}
 

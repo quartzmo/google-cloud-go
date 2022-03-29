@@ -12,8 +12,8 @@ type apiInfo struct {
 	protoPkg string
 	// libPkg is the gapic import path.
 	libPkg string
-	// protoServices are the list of services associated to the proto package.
-	protoServices []*service
+	// protoServices is a map of gapic client short names to service structs.
+	protoServices map[string]*service
 	// version is the Go module version for the gapic client.
 	version string
 	// shortName for the service.
@@ -58,7 +58,6 @@ func (ai *apiInfo) ToSnippetMetadata() *metadata.Index {
 				Language:    metadata.Language_GO,
 				Canonical:   false,
 				Origin:      *metadata.Snippet_API_DEFINITION.Enum(),
-				// TODO: segments
 				ClientMethod: &metadata.ClientMethod{
 					ShortName:  method.name,
 					FullName:   fmt.Sprintf("%s.%s.%s", ai.protoPkg, strings.Title(ai.shortName), method.name),
@@ -78,6 +77,12 @@ func (ai *apiInfo) ToSnippetMetadata() *metadata.Index {
 					},
 				},
 			}
+			segment := &metadata.Snippet_Segment{
+				Start: int32(method.regionTagStart + 1),
+				End:   int32(method.regionTagEnd - 1),
+				Type:  metadata.Snippet_Segment_FULL,
+			}
+			snip.Segments = append(snip.Segments, segment)
 			for _, param := range method.params {
 				methParam := &metadata.ClientMethod_Parameter{
 					Type: param.pType,
@@ -96,23 +101,32 @@ func (ai *apiInfo) protoVersion() string {
 	return ss[len(ss)-1]
 }
 
+// service associates a proto service from gapic metadata with gapic client and its methods
 type service struct {
 	// protoName is the name of the proto service.
 	protoName string
-	// name is the name of the corresponding gapic client for the proto service.
+	// TODO: remove if unused
+	// name is the short name of the corresponding gapic client for the proto service.
 	name string
-	// methods are the list of methods associated to the gapic client.
-	methods []*method
+	// methods is a map of gapic method short names to method structs.
+	methods map[string]*method
 }
 
+// method associates elements of gapic client methods (docs, params and return types)
+// with snippet file details such as the region tag string and line numbers.
 type method struct {
+	// TODO: remove if unused
 	// name is the name of the method.
 	name string
-	// doc is the documention for the methods
+	// doc is the documention for the methods.
 	doc string
 	// regionTag is the region tag that will be used for the generated snippet.
 	regionTag string
-	//params are the input parameters for the gapic method.
+	// regionTagStart is the line number of the START region tag in the snippet file.
+	regionTagStart int
+	// regionTagEnd is the line number of the END region tag in the snippet file.
+	regionTagEnd int
+	// params are the input parameters for the gapic method.
 	params []*param
 	// result is the return value for the method.
 	result string
