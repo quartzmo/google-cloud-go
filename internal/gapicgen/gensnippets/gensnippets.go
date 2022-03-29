@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"go/parser"
 	"go/printer"
 	"go/token"
 	"io/fs"
@@ -79,9 +80,8 @@ func Generate(rootDir, outDir string, apiShortnames map[string]string) error {
 		if err != nil {
 			return err
 		}
-		_ = version
 		for _, pi := range pis {
-			if eErrs := processExamples(pi.Doc, pi.Fset, trimPrefix, rootDir, outDir, apiShortnames); len(eErrs) > 0 {
+			if eErrs := processExamples(pi.Doc, pi.Fset, trimPrefix, rootDir, outDir, apiShortnames, version); len(eErrs) > 0 {
 				errs = append(errs, fmt.Errorf("%v", eErrs))
 			}
 		}
@@ -117,15 +117,21 @@ var skip = map[string]bool{
 }
 
 func getModuleVersion(dir string) (string, error) {
-	return "", nil
+	node, err := parser.ParseFile(token.NewFileSet(), fmt.Sprintf("%s/internal/version.go", dir), nil, parser.ParseComments)
+	if err != nil {
+		return "", err
+	}
+	version := node.Scope.Objects["Version"].Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
+	version = strings.Trim(version, "\"")
+	return version, nil
 }
 
-func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir, outDir string, apiShortnames map[string]string) []error {
+func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir, outDir string, apiShortnames map[string]string, version string) []error {
 	if skip[pkg.ImportPath] {
 		return nil
 	}
 	trimmed := strings.TrimPrefix(pkg.ImportPath, trimPrefix)
-	apiInfo, err := buildAPIInfo(rootDir, trimmed, apiShortnames, pkg)
+	apiInfo, err := buildAPIInfo(rootDir, trimmed, apiShortnames, pkg, version)
 	if err != nil {
 		return []error{err}
 	}
@@ -160,7 +166,7 @@ func processExamples(pkg *doc.Package, fset *token.FileSet, trimPrefix, rootDir,
 	return errs
 }
 
-func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *doc.Package) (*apiInfo, error) {
+func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *doc.Package, version string) (*apiInfo, error) {
 	metadataPath := filepath.Join(rootDir, path, "gapic_metadata.json")
 	f, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -184,7 +190,7 @@ func buildAPIInfo(rootDir, path string, apiShortnames map[string]string, pkg *do
 		protoPkg:  m.ProtoPackage,
 		libPkg:    m.LibraryPackage,
 		shortName: shortname,
-		// TODO: version
+		version:   version,
 	}
 	for sName, s := range m.GetServices() {
 		svc := &service{
@@ -288,7 +294,6 @@ func (c *client) ResultType(name string) string {
 		if v.Name != name {
 			continue
 		}
-		log.Println("Got here")
 		res := v.Decl.Type.Results
 		if res != nil {
 			se, ok := res.List[0].Type.(*ast.StarExpr)

@@ -36,8 +36,8 @@ func (ai *apiInfo) RegionTags() map[string]map[string]string {
 func (ai *apiInfo) ToSnippetMetadata() *metadata.Index {
 	index := &metadata.Index{
 		ClientLibrary: &metadata.ClientLibrary{
-			Name: ai.libPkg,
-			// TODO Version:  "TODO",
+			Name:     ai.libPkg,
+			Version:  ai.version,
 			Language: metadata.Language_GO,
 			Apis: []*metadata.Api{
 				{
@@ -60,9 +60,9 @@ func (ai *apiInfo) ToSnippetMetadata() *metadata.Index {
 				Origin:      *metadata.Snippet_API_DEFINITION.Enum(),
 				// TODO: segments
 				ClientMethod: &metadata.ClientMethod{
-					ShortName: method.name,
-					FullName:  fmt.Sprintf("%s.%s.%s", ai.protoPkg, strings.Title(ai.shortName), method.name),
-					Async:     false,
+					ShortName:  method.name,
+					FullName:   fmt.Sprintf("%s.%s.%s", ai.protoPkg, strings.Title(ai.shortName), method.name),
+					Async:      false,
 					ResultType: method.result,
 					Client: &metadata.ServiceClient{
 						ShortName: service.name,
