@@ -36,6 +36,18 @@ func ExampleNewTetherClient() {
 	_ = c
 }
 
+func ExampleNewTetherRESTClient() {
+	ctx := context.Background()
+	c, err := apigeeconnect.NewTetherRESTClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	defer c.Close()
+
+	// TODO: Use client.
+	_ = c
+}
+
 func ExampleTetherClient_Egress() {
 	ctx := context.Background()
 	c, err := apigeeconnect.NewTetherClient(ctx)

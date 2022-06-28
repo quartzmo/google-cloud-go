@@ -16,12 +16,32 @@
               ]
             }
           }
+        },
+        "rest": {
+          "libraryClient": "ConnectionClient",
+          "rpcs": {
+            "ListConnections": {
+              "methods": [
+                "ListConnections"
+              ]
+            }
+          }
         }
       }
     },
     "Tether": {
       "clients": {
         "grpc": {
+          "libraryClient": "TetherClient",
+          "rpcs": {
+            "Egress": {
+              "methods": [
+                "Egress"
+              ]
+            }
+          }
+        },
+        "rest": {
           "libraryClient": "TetherClient",
           "rpcs": {
             "Egress": {

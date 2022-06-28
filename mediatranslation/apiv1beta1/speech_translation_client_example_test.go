@@ -36,6 +36,18 @@ func ExampleNewSpeechTranslationClient() {
 	_ = c
 }
 
+func ExampleNewSpeechTranslationRESTClient() {
+	ctx := context.Background()
+	c, err := mediatranslation.NewSpeechTranslationRESTClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	defer c.Close()
+
+	// TODO: Use client.
+	_ = c
+}
+
 func ExampleSpeechTranslationClient_StreamingTranslateSpeech() {
 	ctx := context.Background()
 	c, err := mediatranslation.NewSpeechTranslationClient(ctx)

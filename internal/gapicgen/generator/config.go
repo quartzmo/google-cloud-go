@@ -1091,6 +1091,7 @@ var MicrogenGapicConfigs = []*MicrogenConfig{
 		ImportPath:            "cloud.google.com/go/mediatranslation/apiv1beta1",
 		GRPCServiceConfigPath: "mediatranslation_grpc_service_config.json",
 		ApiServiceConfigPath:  "mediatranslation_v1beta1.yaml",
+		Transports:            []string{"grpc", "rest"},
 		ReleaseLevel:          "beta",
 	},
 	{
@@ -1230,6 +1231,7 @@ var MicrogenGapicConfigs = []*MicrogenConfig{
 		ImportPath:            "cloud.google.com/go/apigeeconnect/apiv1",
 		GRPCServiceConfigPath: "connection_grpc_service_config.json",
 		ApiServiceConfigPath:  "apigeeconnect_v1.yaml",
+		Transports:            []string{"grpc", "rest"},
 		ReleaseLevel:          "ga",
 	},
 	{

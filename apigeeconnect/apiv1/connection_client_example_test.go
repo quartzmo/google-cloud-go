@@ -36,6 +36,18 @@ func ExampleNewConnectionClient() {
 	_ = c
 }
 
+func ExampleNewConnectionRESTClient() {
+	ctx := context.Background()
+	c, err := apigeeconnect.NewConnectionRESTClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	defer c.Close()
+
+	// TODO: Use client.
+	_ = c
+}
+
 func ExampleConnectionClient_ListConnections() {
 	ctx := context.Background()
 	c, err := apigeeconnect.NewConnectionClient(ctx)
