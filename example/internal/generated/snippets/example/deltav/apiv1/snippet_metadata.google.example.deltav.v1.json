@@ -1,0 +1,199 @@
+{
+  "clientLibrary": {
+    "name": "cloud.google.com/go/example/deltav/apiv1",
+    "version": "$VERSION",
+    "language": "GO",
+    "apis": [
+      {
+        "id": "google.example.deltav.v1",
+        "version": "v1"
+      }
+    ]
+  },
+  "snippets": [
+    {
+      "regionTag": "deltav-pa_v1_generated_SpaceService_GetMoon_sync",
+      "title": "deltav-pa GetMoon Sample",
+      "description": "GetMoon fetches a moon.",
+      "file": "SpaceClient/GetMoon/main.go",
+      "language": "GO",
+      "clientMethod": {
+        "shortName": "GetMoon",
+        "fullName": "google.example.deltav.v1.SpaceClient.GetMoon",
+        "parameters": [
+          {
+            "type": "context.Context",
+            "name": "ctx"
+          },
+          {
+            "type": "deltavpb.GetMoonRequest",
+            "name": "req"
+          },
+          {
+            "type": "...gax.CallOption",
+            "name": "opts"
+          }
+        ],
+        "resultType": "*deltavpb.Moon",
+        "client": {
+          "shortName": "SpaceClient",
+          "fullName": "google.example.deltav.v1.SpaceClient"
+        },
+        "method": {
+          "shortName": "GetMoon",
+          "fullName": "google.example.deltav.v1.SpaceService.GetMoon",
+          "service": {
+            "shortName": "SpaceService",
+            "fullName": "google.example.deltav.v1.SpaceService"
+          }
+        }
+      },
+      "origin": "API_DEFINITION",
+      "segments": [
+        {
+          "start": 18,
+          "end": 53,
+          "type": "FULL"
+        }
+      ]
+    },
+    {
+      "regionTag": "deltav-pa_v1_generated_SpaceService_GetPlanet_sync",
+      "title": "deltav-pa GetPlanet Sample",
+      "description": "GetPlanet fetches a planet.",
+      "file": "SpaceClient/GetPlanet/main.go",
+      "language": "GO",
+      "clientMethod": {
+        "shortName": "GetPlanet",
+        "fullName": "google.example.deltav.v1.SpaceClient.GetPlanet",
+        "parameters": [
+          {
+            "type": "context.Context",
+            "name": "ctx"
+          },
+          {
+            "type": "deltavpb.GetPlanetRequest",
+            "name": "req"
+          },
+          {
+            "type": "...gax.CallOption",
+            "name": "opts"
+          }
+        ],
+        "resultType": "*deltavpb.Planet",
+        "client": {
+          "shortName": "SpaceClient",
+          "fullName": "google.example.deltav.v1.SpaceClient"
+        },
+        "method": {
+          "shortName": "GetPlanet",
+          "fullName": "google.example.deltav.v1.SpaceService.GetPlanet",
+          "service": {
+            "shortName": "SpaceService",
+            "fullName": "google.example.deltav.v1.SpaceService"
+          }
+        }
+      },
+      "origin": "API_DEFINITION",
+      "segments": [
+        {
+          "start": 18,
+          "end": 53,
+          "type": "FULL"
+        }
+      ]
+    },
+    {
+      "regionTag": "deltav-pa_v1_generated_SpaceService_ListMoons_sync",
+      "title": "deltav-pa ListMoons Sample",
+      "description": "ListMoons fetches a list of moons.",
+      "file": "SpaceClient/ListMoons/main.go",
+      "language": "GO",
+      "clientMethod": {
+        "shortName": "ListMoons",
+        "fullName": "google.example.deltav.v1.SpaceClient.ListMoons",
+        "parameters": [
+          {
+            "type": "context.Context",
+            "name": "ctx"
+          },
+          {
+            "type": "deltavpb.ListMoonsRequest",
+            "name": "req"
+          },
+          {
+            "type": "...gax.CallOption",
+            "name": "opts"
+          }
+        ],
+        "resultType": "MoonIterator",
+        "client": {
+          "shortName": "SpaceClient",
+          "fullName": "google.example.deltav.v1.SpaceClient"
+        },
+        "method": {
+          "shortName": "ListMoons",
+          "fullName": "google.example.deltav.v1.SpaceService.ListMoons",
+          "service": {
+            "shortName": "SpaceService",
+            "fullName": "google.example.deltav.v1.SpaceService"
+          }
+        }
+      },
+      "origin": "API_DEFINITION",
+      "segments": [
+        {
+          "start": 18,
+          "end": 66,
+          "type": "FULL"
+        }
+      ]
+    },
+    {
+      "regionTag": "deltav-pa_v1_generated_SpaceService_ListPlanets_sync",
+      "title": "deltav-pa ListPlanets Sample",
+      "description": "ListPlanets fetches a list of planets.",
+      "file": "SpaceClient/ListPlanets/main.go",
+      "language": "GO",
+      "clientMethod": {
+        "shortName": "ListPlanets",
+        "fullName": "google.example.deltav.v1.SpaceClient.ListPlanets",
+        "parameters": [
+          {
+            "type": "context.Context",
+            "name": "ctx"
+          },
+          {
+            "type": "deltavpb.ListPlanetsRequest",
+            "name": "req"
+          },
+          {
+            "type": "...gax.CallOption",
+            "name": "opts"
+          }
+        ],
+        "resultType": "PlanetIterator",
+        "client": {
+          "shortName": "SpaceClient",
+          "fullName": "google.example.deltav.v1.SpaceClient"
+        },
+        "method": {
+          "shortName": "ListPlanets",
+          "fullName": "google.example.deltav.v1.SpaceService.ListPlanets",
+          "service": {
+            "shortName": "SpaceService",
+            "fullName": "google.example.deltav.v1.SpaceService"
+          }
+        }
+      },
+      "origin": "API_DEFINITION",
+      "segments": [
+        {
+          "start": 18,
+          "end": 66,
+          "type": "FULL"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.example.deltav.v1",
+  "libraryPackage": "cloud.google.com/go/example/deltav/apiv1",
+  "services": {
+    "SpaceService": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "SpaceClient",
+          "rpcs": {
+            "GetMoon": {
+              "methods": [
+                "GetMoon"
+              ]
+            },
+            "GetPlanet": {
+              "methods": [
+                "GetPlanet"
+              ]
+            },
+            "ListMoons": {
+              "methods": [
+                "ListMoons"
+              ]
+            },
+            "ListPlanets": {
+              "methods": [
+                "ListPlanets"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "SpaceClient",
+          "rpcs": {
+            "GetMoon": {
+              "methods": [
+                "GetMoon"
+              ]
+            },
+            "GetPlanet": {
+              "methods": [
+                "GetPlanet"
+              ]
+            },
+            "ListMoons": {
+              "methods": [
+                "ListMoons"
+              ]
+            },
+            "ListPlanets": {
+              "methods": [
+                "ListPlanets"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
