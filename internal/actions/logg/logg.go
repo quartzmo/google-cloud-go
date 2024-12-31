@@ -35,6 +35,15 @@ func Printf(format string, values ...interface{}) {
 	log.Printf(format, values...)
 }
 
+// Println is a potentially quiet log.Println.
+func Println(a ...any) {
+	if Quiet {
+		logBuffer = append(logBuffer, fmt.Sprintln(a))
+		return
+	}
+	log.Println(a)
+}
+
 // Fatal is a potentially really loud log.Fatal.
 // It dumps the log buffer if run in quiet mode.
 func Fatal(err error) {
