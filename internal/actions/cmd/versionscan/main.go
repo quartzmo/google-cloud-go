@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -31,9 +30,10 @@ const (
 )
 
 var (
-	dir           = flag.String("dir", "", "the root directory to evaluate")
-	changesRegexp = regexp.MustCompile(`\[([0-9]+\.[0-9]+\.[0-9]+)\]`)
-	moduleRegexp  = regexp.MustCompile(`"([0-9]+\.[0-9]+\.[0-9]+)"`)
+	dir       = flag.String("dir", "", "the root directory to evaluate")
+	write     = flag.Bool("w", false, "overwrite the version.go value with the manifest value")
+	changesRe = regexp.MustCompile(`\[([0-9]+\.[0-9]+\.[0-9]+)\]`)
+	moduleRe  = regexp.MustCompile(`"([0-9]+\.[0-9]+\.[0-9]+)"`)
 )
 
 func main() {
@@ -58,21 +58,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("|module|manifest|changelog|version.go|")
-	fmt.Println("|------|--------|---------|----------|")
+	var count int
+	fmt.Println("|num|module|manifest|version.go|")
+	fmt.Println("|---|------|--------|----------|")
 	for _, submodDir := range submodulesDirs {
 		if strings.HasPrefix(submodDir, "internal") {
 			continue
 		}
-		manifestVersion, ok := manifest[submodDir]
+		mv, ok := manifest[submodDir]
 		if !ok {
 			continue
 		}
-		changesVersion := lastChangesVersion(submodDir)
-		moduleVersion := moduleVersion(submodDir)
-		if manifestVersion != changesVersion || manifestVersion != moduleVersion {
-			fmt.Printf("|%s|%s|%s|%s|\n", submodDir, manifestVersion, changesVersion, moduleVersion)
+		manifestVersion, ok := mv.(string)
+		if !ok {
+			log.Fatalf("failed to cast value to string for key: %s", submodDir)
 		}
+
+		moduleVersion := moduleVersion(submodDir, manifestVersion)
+		count++
+		if manifestVersion != moduleVersion {
+			fmt.Printf("|%d|%s|%s|%s|\n", count, submodDir, manifestVersion, moduleVersion)
+		}
+
 	}
 }
 
@@ -98,50 +105,23 @@ func modDirs(dir string) (submodulesDirs []string, err error) {
 	return submodulesDirs, nil
 }
 
-func lastChangesVersion(dir string) string {
-	file, err := os.Open(fmt.Sprintf("%s/CHANGES.md", dir))
+func moduleVersion(dir, newValue string) string {
+	file := fmt.Sprintf("%s/internal/version.go", dir)
+	b, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatalf("failed to open file: %s", err)
 	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text() // Get the line as a string
-		if c := changesRegexp.FindStringSubmatch(line); len(c) > 0 {
-			s := strings.TrimPrefix(c[0], "[")
-			s = strings.TrimSuffix(s, "]")
-			return s
+	m := moduleRe.FindStringSubmatch(string(b))
+	if len(m) < 1 {
+		log.Fatalf("expected to find version in version.go: %s", file)
+	}
+	moduleVersion := strings.TrimPrefix(m[0], "\"")
+	moduleVersion = strings.TrimSuffix(moduleVersion, "\"")
+	if *write && (moduleVersion != newValue) {
+		b2 := moduleRe.ReplaceAll(b, []byte(fmt.Sprintf("\"%s\"", newValue)))
+		if err := os.WriteFile(file, b2, 0644); err != nil {
+			log.Fatalf("error writing file: %s", err)
 		}
 	}
-
-	// Check for errors during the scan
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("error reading file: %s", err)
-	}
-	return "nil"
-}
-
-func moduleVersion(dir string) string {
-	file, err := os.Open(fmt.Sprintf("%s/internal/version.go", dir))
-	if err != nil {
-		log.Fatalf("failed to open file: %s", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text() // Get the line as a string
-		if c := moduleRegexp.FindStringSubmatch(line); len(c) > 0 {
-			s := strings.TrimPrefix(c[0], "\"")
-			s = strings.TrimSuffix(s, "\"")
-			return s
-		}
-	}
-
-	// Check for errors during the scan
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("error reading file: %s", err)
-	}
-	return "nil"
+	return moduleVersion
 }
