@@ -59,8 +59,8 @@ func main() {
 	}
 
 	var count int
-	fmt.Println("|num|module|manifest|version.go|")
-	fmt.Println("|---|------|--------|----------|")
+	fmt.Println("|num|module|version.go|manifest|")
+	fmt.Println("|---|------|----------|--------|")
 	for _, submodDir := range submodulesDirs {
 		if strings.HasPrefix(submodDir, "internal") {
 			continue
@@ -75,9 +75,9 @@ func main() {
 		}
 
 		moduleVersion := moduleVersion(submodDir, manifestVersion)
-		count++
 		if manifestVersion != moduleVersion {
-			fmt.Printf("|%d|%s|%s|%s|\n", count, submodDir, manifestVersion, moduleVersion)
+			count++
+			fmt.Printf("|%d|%s|%s|%s|\n", count, submodDir, moduleVersion, manifestVersion)
 		}
 
 	}
