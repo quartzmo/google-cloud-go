@@ -98,6 +98,7 @@ use (
 	./internal/generated/snippets
 	./internal/godocfx
 	./internal/postprocessor/librarian/bazel
+	./internal/postprocessor/librarian/generator
 	./internal/postprocessor/librarian/patron
 	./internal/postprocessor/librarian/protoc
 	./internal/protoveneer
