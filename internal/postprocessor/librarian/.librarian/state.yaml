@@ -1,0 +1,34 @@
+# The name of the image and tag to use for generation.
+# This is specified in go/librarian:guide and go/librarian:cli-reimagined.
+image: "gcr.io/cloud-python-infra/python-library-generator:v1.5.0"
+
+# The state of each library which is released within this repository.
+libraries:
+  - # The library identifier, which for Python is the PyPI package name.
+    id: "google-cloud-secretmanager"
+    # The last version that was released, if any.
+    version: "2.16.0"
+    # The commit hash from the googleapis/googleapis repository at which
+    # the library was last generated.
+    last_generated_commit: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+    # APIs that are bundled as a part of this library.
+    apis:
+      - # The API path included in this library, relative to the root
+        # of the API definition repo.
+        path: "google/cloud/secretmanager/v1"
+        # The name of the service config file, relative to the path.
+        service_config: "secretmanager_v1.yaml"
+    # Directories to which librarian contributes code. For Python, this is
+    # typically the package directory.
+    source_paths:
+      - "packages/google-cloud-secretmanager/google/cloud/secretmanager"
+      - "packages/google-cloud-secretmanager/tests"
+    # Files/directories to leave untouched during generation.
+    # This is useful for preserving handwritten helper files or customizations.
+    preserve_regex:
+      - "packages/google-cloud-secretmanager/google/cloud/secretmanager/handwritten_helper.py"
+    # If configured, these files/dirs will be removed before generated code is copied
+    # over. A more specific `preserve_regex` takes precedence. If not set, defaults
+    # to the `source_paths`.
+    remove_regex:
+      - "packages/google-cloud-secretmanager/google/cloud/secretmanager/_generated"

@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package protoc
 
 import (
 	"encoding/json"
 	"flag"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -91,6 +92,33 @@ func handleGenerate(repo, image, libraryFlag, apiFlag, apiSource, outputFlag, pu
 			log.Fatalf("Failed to copy files for API %s: %v", api.Path, err)
 		}
 	}
+
+	// Find all .proto files in the input directory.
+	protoFiles, err := findProtoFiles(inputMount)
+	if err != nil {
+		log.Fatalf("Error finding proto files in %s: %v", inputMount, err)
+	}
+	if len(protoFiles) == 0 {
+		log.Printf("No proto files found in %s. Nothing to generate.", inputMount)
+		return
+	}
+
+	// Construct and execute the protoc command.
+	protocArgs := []string{
+		"--proto_path=" + inputMount,
+		"--go_gapic_out=" + outputMount,
+	}
+	protocArgs = append(protocArgs, protoFiles...)
+
+	log.Printf("Executing command: protoc %v", protocArgs)
+	cmd := exec.Command("protoc", protocArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("protoc command failed: %v", err)
+	}
+
 	log.Println("Generation complete.")
 
 	// If the build flag is true, run the build process.

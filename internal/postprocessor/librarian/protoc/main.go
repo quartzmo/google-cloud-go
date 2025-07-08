@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package protoc
 
 import (
 	"encoding/json"
@@ -145,39 +145,6 @@ func handleBuild(lib Library) {
 		log.Println("Tests passed.")
 	}
 	log.Println("Build and test complete.")
-}
-
-// handleGenerate executes the `protoc` command to generate code.
-func handleGenerate(args []string) {
-	log.Println("Running 'generate' command...")
-
-	// Find all .proto files in the input directory.
-	protoFiles, err := findProtoFiles(inputMount)
-	if err != nil {
-		log.Fatalf("Error finding proto files in %s: %v", inputMount, err)
-	}
-	if len(protoFiles) == 0 {
-		log.Printf("No proto files found in %s. Nothing to generate.", inputMount)
-		return
-	}
-
-	// Construct and execute the protoc command.
-	protocArgs := []string{
-		"--proto_path=" + inputMount,
-		"--go_gapic_out=" + outputMount,
-	}
-	protocArgs = append(protocArgs, protoFiles...)
-
-	log.Printf("Executing command: protoc %v", protocArgs)
-	cmd := exec.Command("protoc", protocArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("protoc command failed: %v", err)
-	}
-
-	log.Println("Successfully generated code.")
 }
 
 // findProtoFiles recursively finds all files with the .proto extension in a directory.
