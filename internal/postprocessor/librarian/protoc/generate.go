@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 )
 
-// handleGenerateCmd sets up and executes the 'generate' command.
+// handleGenerate sets up and executes the 'generate' command.
 // It defines flags, parses them, and calls the core logic.
-func handleGenerateCmd(args []string) {
+func handleGenerate(args []string) {
 	generateCmd := flag.NewFlagSet("generate", flag.ExitOnError)
 	repo := generateCmd.String("repo", "", "Code repository where the generated code will reside.")
 	image := generateCmd.String("image", "", "Language specific image used for code generation.")
@@ -42,11 +42,11 @@ func handleGenerateCmd(args []string) {
 	generateCmd.Parse(args)
 
 	// Call the handler with the parsed flags.
-	handleGenerate(repo, image, library, api, apiSource, output, pushConfig, envConfig, hostMount, build)
+	generate(repo, image, library, api, apiSource, output, pushConfig, envConfig, hostMount, build)
 }
 
 // handleGenerate implements the core logic for the 'generate' container command.
-func handleGenerate(repo, image, libraryFlag, apiFlag, apiSource, outputFlag, pushConfig, envConfig, hostMount *string, build *bool) {
+func generate(repo, image, libraryFlag, apiFlag, apiSource, outputFlag, pushConfig, envConfig, hostMount *string, build *bool) {
 	log.Println("Running 'generate' command with flags...")
 	// Log the received flags to confirm they are parsed.
 	log.Printf("--repo=%s", *repo)

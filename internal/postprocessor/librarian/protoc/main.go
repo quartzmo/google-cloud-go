@@ -47,8 +47,9 @@ const (
 	inputMount     = "/input"
 	outputMount    = "/output"
 	sourceMount    = "/source"
-	repoMount      = "/repo"
 )
+
+var repoMount = "/repo"
 
 func main() {
 	// The command is expected as the first argument, as per the container contract.
