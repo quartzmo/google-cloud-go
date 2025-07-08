@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// python_librarian.go is an exploratory implementation of the Python Librarian container.
+// librarian/bazel is an exploratory implementation of the Go Librarian container.
 //
-// As outlined in go/librarian:python and go/sdk-librarian-python, the Python
-// Librarian is a containerized application for generating Python client libraries.
+// Similar to the Python Librarian outlined in go/librarian:python and go/sdk-librarian-python,
+// the Go Bazel Librarian is a containerized application for generating Go GAPIC client libraries.
 // This script acts as the main entrypoint for that container, orchestrating the
 // code generation process based on the contracts defined in go/librarian:cli-reimagined.
 //
@@ -34,7 +34,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"text/template"
 )
 
 // The following structs represent the configuration for a library that Librarian
@@ -42,7 +41,7 @@ import (
 // repository and is used for communication between the Librarian CLI and this
 // generator container. See go/librarian:cli-reimagined for more details.
 
-// Library represents a single releasable unit, like a Python package.
+// Library represents a single releasable unit, like a Go package.
 type Library struct {
 	// A language-specific identifier, e.g., "google-cloud-storage".
 	ID string `json:"id"`
@@ -68,17 +67,17 @@ type API struct {
 	ServiceConfig string `json:"service_config"`
 }
 
-// main is the entrypoint for the Python Librarian container.
+// main is the entrypoint for the Go Librarian container.
 //
 // The Librarian CLI invokes this container with a specific command as the first
 // argument. This function parses that command and delegates to the appropriate
 // handler. This adheres to the container contract where the container is invoked
 // with commands like 'configure', 'generate', or 'build'.
 func main() {
-	log.Println("Python Librarian container started.")
+	log.Println("Go Librarian container started.")
 
 	if len(os.Args) < 2 {
-		log.Fatal("Error: Missing command. Usage: python_librarian <command>")
+		log.Fatal("Error: Missing command. Usage: Go_librarian <command>")
 	}
 
 	// The command is passed as the first argument by the Librarian CLI.
@@ -109,7 +108,7 @@ func main() {
 //
 // As per the 'configure container command' contract (go/librarian:guide), this
 // function reads a minimal library definition from `/librarian/configure-request.json`,
-// enriches it with Python-specific details, and writes the result back to
+// enriches it with Go-specific details, and writes the result back to
 // `/librarian/configure-response.json`.
 func handleConfigure() error {
 	log.Println("--- Running Configure Step ---")
@@ -128,17 +127,17 @@ func handleConfigure() error {
 		return fmt.Errorf("failed to parse configure request: %w", err)
 	}
 
-	// 2. Enrich the library configuration with Python-specific conventions.
+	// 2. Enrich the library configuration with Go-specific conventions.
 	// For a new library, we set a default version and determine source paths.
 	// As noted in go/sdk-librarian-python, resetting the version is an important
 	// step for ensuring a clean migration from the old system.
 	log.Printf("Enriching configuration for library: %s", lib.ID)
 	lib.Version = "0.1.0" // Starting version for a new library.
 	// Example: id `google-cloud-storage` -> path `google/cloud/storage`
-	pythonStylePath := strings.Replace(lib.ID, "-", "/", -1)
+	goStylePath := strings.Replace(lib.ID, "-", "/", -1)
 	lib.SourcePaths = []string{
 		// Main source code path
-		filepath.Join("packages", lib.ID, pythonStylePath),
+		filepath.Join("packages", lib.ID, goStylePath),
 		// Tests path
 		filepath.Join("packages", lib.ID, "tests"),
 	}
@@ -179,11 +178,11 @@ func handleGenerate() error {
 	outputDir := "/output"
 
 	// 2. Invoke the underlying code generator.
-	// In Phase 1, this is a Python script that wraps Bazel. We simulate that call here.
+	// In Phase 1, this is a Go script that wraps Bazel. We simulate that call here.
 	// The actual script would take parameters pointing to /source (APIs), /input,
 	// and /output. See go/sdk-librarian-python for CLI examples.
-	log.Println("Invoking the Python generator CLI (which wraps Bazel)...")
-	cmd := exec.Command("python3", "tools/python_generator_cli/cli.py",
+	log.Println("Invoking the Go generator CLI (which wraps Bazel)...")
+	cmd := exec.Command("go", "run", "tools/go_generator_cli/cli.go",
 		"generate-library",
 		"--api-root=/source",
 		"--generator-input=/input",
@@ -194,7 +193,7 @@ func handleGenerate() error {
 	// For this example, we just log the simulated command.
 	log.Printf("Simulating command: %s", cmd.String())
 	// if err := cmd.Run(); err != nil {
-	// 	return fmt.Errorf("python generator cli failed: %w", err)
+	// 	return fmt.Errorf("go generator cli failed: %w", err)
 	// }
 	log.Println("Generator finished.")
 
@@ -247,54 +246,3 @@ func handleBuild() error {
 
 	return nil
 }
-
-// applyTemplate is a helper to execute a Go template and write it to a file.
-// Note: In the "Owlbot in a box" model, templating is handled inside the
-// generator script itself, so this helper would not be used in Phase 1.
-// It is kept here for future reference (Phase 3).
-func applyTemplate(path string, tmpl string, data interface{}) error {
-	t, err := template.New(filepath.Base(path)).Parse(tmpl)
-	if err != nil {
-		return fmt.Errorf("failed to parse template %s: %w", path, err)
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("failed to create file %s: %w", path, err)
-	}
-	defer f.Close()
-
-	return t.Execute(f, data)
-}
-
-// --- Templates ---
-// In a real implementation, these would be loaded from the `/input` directory.
-// They are included here for demonstration purposes for a future, non-Bazel generator.
-
-const setupPyTemplate = `import setuptools
-
-setuptools.setup(
-    name="{{.ID}}",
-    version="{{.Version}}",
-    author="Google LLC",
-    author_email="googleapis-packages@google.com",
-    description="Python client for {{.ID}}",
-    packages=setuptools.find_packages(),
-    python_requires=">=3.7",
-)
-`
-
-const readmeTemplate = `# Python Client for {{.ID}}
-
-This is the Python client library for the {{.ID}} API.
-
-## Installation
-
-\`\`\`bash
-pip install {{.ID}}
-\`\`\`
-
-## Usage
-
-(Usage examples would go here)
-`
