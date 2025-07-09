@@ -12,237 +12,186 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// librarian/bazel is an exploratory implementation of the Go Librarian container.
+// bazel-generator is an alternative implementation of the Go Librarian container
+// that uses Bazel for the generation and build steps.
 //
-// Similar to the Python Librarian outlined in go/librarian:python and go/sdk-librarian-python,
-// the Go Bazel Librarian is a containerized application for generating Go GAPIC client libraries.
-// This script acts as the main entrypoint for that container, orchestrating the
-// code generation process based on the contracts defined in go/librarian:cli-reimagined.
-//
-// This implementation is intended for instructional purposes for new engineers.
-// It specifically models the "Phase 1: Owlbot in a box" strategy from the
-// migration plan. In this phase, the container wraps the existing Bazel-based
-// generation process to ensure a smooth transition with minimal initial code changes.
+// This approach is maintained as an alternative strategy, as discussed in
+// go/sdk-librarian-python, representing a "Phase 1: Owlbot in a box" model.
+// It wraps the existing Bazel-based generation process to ensure a smooth
+// transition with minimal initial code changes for teams that rely on it.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
-// The following structs represent the configuration for a library that Librarian
-// manages. This structure is defined in the `state.yaml` file within a language
-// repository and is used for communication between the Librarian CLI and this
-// generator container. See go/librarian:cli-reimagined for more details.
+const (
+	// Mount points for the generator container, as per the contract.
+	librarianDir = "/librarian"
+	inputDir     = "/input"
+	outputDir    = "/output"
+	sourceDir    = "/source"
+	repoDir      = "/repo"
+)
 
-// Library represents a single releasable unit, like a Go package.
+// Library represents a single library definition from the state file.
 type Library struct {
-	// A language-specific identifier, e.g., "google-cloud-storage".
-	ID string `json:"id"`
-	// The last released version, e.g., "1.15.0".
-	Version string `json:"version,omitempty"`
-	// The commit hash from the API definition repo at the last generation.
-	LastGeneratedCommit string `json:"last_generated_commit,omitempty"`
-	// APIs bundled in this library. A library can contain multiple APIs.
-	APIs []API `json:"apis"`
-	// Paths where generated source code is placed.
-	SourcePaths []string `json:"source_paths,omitempty"`
-	// Regex patterns for files to preserve during generation.
-	PreserveRegex []string `json:"preserve_regex,omitempty"`
-	// Regex patterns for files/directories to remove before copying new files.
-	RemoveRegex []string `json:"remove_regex,omitempty"`
+	ID                  string   `json:"id"`
+	Version             string   `json:"version,omitempty"`
+	LastGeneratedCommit string   `json:"last_generated_commit,omitempty"`
+	APIs                []API    `json:"apis"`
+	SourcePaths         []string `json:"source_paths,omitempty"`
+	PreserveRegex       []string `json:"preserve_regex,omitempty"`
+	RemoveRegex         []string `json:"remove_regex,omitempty"`
 }
 
-// API represents a single API definition, e.g., "google/storage/v1".
+// API represents a single API definition within a library.
 type API struct {
-	// The path to the API definition relative to the root of the API repo.
-	Path string `json:"path"`
-	// The service config file name for this API.
+	Path          string `json:"path"`
 	ServiceConfig string `json:"service_config"`
 }
 
-// main is the entrypoint for the Go Librarian container.
-//
-// The Librarian CLI invokes this container with a specific command as the first
-// argument. This function parses that command and delegates to the appropriate
-// handler. This adheres to the container contract where the container is invoked
-// with commands like 'configure', 'generate', or 'build'.
+// main is the entrypoint for the Bazel-based Go generator container.
 func main() {
-	log.Println("Go Librarian container started.")
-
-	if len(os.Args) < 2 {
-		log.Fatal("Error: Missing command. Usage: Go_librarian <command>")
+	slog.Info("Bazel Go generator invoked", "args", os.Args)
+	if err := run(context.Background()); err != nil {
+		slog.Error("generator failed", "error", err)
+		os.Exit(1)
 	}
-
-	// The command is passed as the first argument by the Librarian CLI.
-	command := os.Args[1]
-	log.Printf("Executing command: %s", command)
-
-	switch command {
-	case "configure":
-		if err := handleConfigure(); err != nil {
-			log.Fatalf("Configuration failed: %v", err)
-		}
-	case "generate":
-		if err := handleGenerate(); err != nil {
-			log.Fatalf("Generation failed: %v", err)
-		}
-	case "build":
-		if err := handleBuild(); err != nil {
-			log.Fatalf("Build failed: %v", err)
-		}
-	default:
-		log.Fatalf("Error: Unknown command '%s'", command)
-	}
-
-	log.Printf("Command '%s' completed successfully.", command)
+	slog.Info("Bazel Go generator finished successfully")
 }
 
-// handleConfigure is responsible for the 'configure' step of onboarding a new library.
-//
-// As per the 'configure container command' contract (go/librarian:guide), this
-// function reads a minimal library definition from `/librarian/configure-request.json`,
-// enriches it with Go-specific details, and writes the result back to
-// `/librarian/configure-response.json`.
-func handleConfigure() error {
-	log.Println("--- Running Configure Step ---")
-	requestPath := "/librarian/configure-request.json"
-	responsePath := "/librarian/configure-response.json"
+// run executes the appropriate command based on the container's invocation arguments.
+func run(ctx context.Context) error {
+	if len(os.Args) < 2 {
+		return fmt.Errorf("expected at least one argument for the command, got %d", len(os.Args)-1)
+	}
+	cmd := os.Args[1]
+	switch cmd {
+	case "generate":
+		return generateCmd(ctx)
+	case "configure":
+		return configureCmd(ctx)
+	case "build":
+		return buildCmd(ctx)
+	default:
+		return fmt.Errorf("unknown command: %s", cmd)
+	}
+}
 
-	// 1. Read the request from the Librarian CLI.
-	log.Printf("Reading configure request from %s", requestPath)
-	data, err := ioutil.ReadFile(requestPath)
+// configureCmd handles the 'configure' step for a new library.
+func configureCmd(ctx context.Context) error {
+	slog.Info("configure command started")
+	reqPath := filepath.Join(librarianDir, "configure-request.json")
+	respPath := filepath.Join(librarianDir, "configure-response.json")
+
+	reqFile, err := os.ReadFile(reqPath)
 	if err != nil {
-		return fmt.Errorf("failed to read configure request: %w", err)
+		return fmt.Errorf("failed to read configure-request.json from %s: %w", librarianDir, err)
 	}
 
 	var lib Library
-	if err := json.Unmarshal(data, &lib); err != nil {
-		return fmt.Errorf("failed to parse configure request: %w", err)
+	if err := json.Unmarshal(reqFile, &lib); err != nil {
+		return fmt.Errorf("failed to unmarshal configure request: %w", err)
 	}
 
-	// 2. Enrich the library configuration with Go-specific conventions.
-	// For a new library, we set a default version and determine source paths.
-	// As noted in go/sdk-librarian-python, resetting the version is an important
-	// step for ensuring a clean migration from the old system.
-	log.Printf("Enriching configuration for library: %s", lib.ID)
-	lib.Version = "0.1.0" // Starting version for a new library.
-	// Example: id `google-cloud-storage` -> path `google/cloud/storage`
+	// Enrich the library config with Go-specific defaults.
+	lib.Version = "0.1.0"
 	goStylePath := strings.Replace(lib.ID, "-", "/", -1)
-	lib.SourcePaths = []string{
-		// Main source code path
-		filepath.Join("packages", lib.ID, goStylePath),
-		// Tests path
-		filepath.Join("packages", lib.ID, "tests"),
-	}
-	// By default, we remove the old source paths before copying new ones.
+	lib.SourcePaths = []string{filepath.Join("internal", goStylePath)}
 	lib.RemoveRegex = lib.SourcePaths
 
-	// 3. Write the enriched configuration back for the Librarian CLI to process.
-	log.Printf("Writing configure response to %s", responsePath)
-	outData, err := json.MarshalIndent(lib, "", "  ")
+	respFile, err := json.MarshalIndent(lib, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to serialize configure response: %w", err)
+		return fmt.Errorf("failed to marshal configure response: %w", err)
 	}
 
-	return ioutil.WriteFile(responsePath, outData, 0644)
-}
-
-// handleGenerate is responsible for the 'generate' step.
-//
-// This function orchestrates the core logic of code generation. For Phase 1,
-// this means invoking the existing Bazel-based build process, effectively
-// putting "OwlBot in a box".
-func handleGenerate() error {
-	log.Println("--- Running Generate Step (Phase 1: Owlbot in a box) ---")
-	requestPath := "/librarian/generate-request.json"
-
-	// 1. Parse the generation request.
-	log.Printf("Reading generate request from %s", requestPath)
-	data, err := ioutil.ReadFile(requestPath)
-	if err != nil {
-		return fmt.Errorf("failed to read generate request: %w", err)
+	if err := os.WriteFile(respPath, respFile, 0644); err != nil {
+		return fmt.Errorf("failed to write configure-response.json to %s: %w", respPath, err)
 	}
-	var lib Library
-	if err := json.Unmarshal(data, &lib); err != nil {
-		return fmt.Errorf("failed to parse generate request: %w", err)
-	}
-
-	// The /output directory is the destination for all generated code.
-	outputDir := "/output"
-
-	// 2. Invoke the underlying code generator.
-	// In Phase 1, this is a Go script that wraps Bazel. We simulate that call here.
-	// The actual script would take parameters pointing to /source (APIs), /input,
-	// and /output. See go/sdk-librarian-python for CLI examples.
-	log.Println("Invoking the Go generator CLI (which wraps Bazel)...")
-	cmd := exec.Command("go", "run", "tools/go_generator_cli/cli.go",
-		"generate-library",
-		"--api-root=/source",
-		"--generator-input=/input",
-		fmt.Sprintf("--output=%s", outputDir),
-		fmt.Sprintf("--library-id=%s", lib.ID),
-	)
-	// In a real run, we would capture and log stdout/stderr.
-	// For this example, we just log the simulated command.
-	log.Printf("Simulating command: %s", cmd.String())
-	// if err := cmd.Run(); err != nil {
-	// 	return fmt.Errorf("go generator cli failed: %w", err)
-	// }
-	log.Println("Generator finished.")
-
-	// 3. Post-processing.
-	// In the "Owlbot in a box" model, the generator script handles most of this.
-	// Any steps that Librarian needs to do after the container runs (like copying
-	// files from /output) are handled by the Librarian CLI, not this script.
-	log.Println("Post-processing is handled by the generator script and Librarian CLI.")
-
+	slog.Info("successfully wrote configuration", "path", respPath)
 	return nil
 }
 
-// handleBuild is responsible for the 'build' step.
-//
-// This function's task is to verify that the newly generated code is valid.
-// In the "Owlbot in a box" phase, this means running the Bazel tests.
-func handleBuild() error {
-	log.Println("--- Running Build Step (Phase 1: Owlbot in a box) ---")
-	requestPath := "/librarian/build-request.json"
+// generateCmd handles the 'generate' step by invoking a Bazel-based process.
+func generateCmd(ctx context.Context) error {
+	slog.Info("generate command started (Bazel strategy)")
+	reqPath := filepath.Join(librarianDir, "generate-request.json")
 
-	log.Printf("Reading build request from %s", requestPath)
-	data, err := ioutil.ReadFile(requestPath)
+	reqFile, err := os.ReadFile(reqPath)
 	if err != nil {
-		return fmt.Errorf("failed to read build request: %w", err)
+		return fmt.Errorf("failed to read generate-request.json from %s: %w", librarianDir, err)
 	}
+
 	var lib Library
-	if err := json.Unmarshal(data, &lib); err != nil {
-		return fmt.Errorf("failed to parse build request: %w", err)
+	if err := json.Unmarshal(reqFile, &lib); err != nil {
+		return fmt.Errorf("failed to unmarshal generate request: %w", err)
 	}
 
-	// The working directory for build commands is the root of the repository.
-	workDir := "/repo"
-	log.Printf("Working directory is %s", workDir)
+	// In this strategy, we invoke a hypothetical generator CLI that wraps Bazel.
+	// This simulates the "Owlbot in a box" approach.
+	slog.Info("invoking Bazel-based generator script")
+	args := []string{
+		"run",
+		"//tools/generator:main", // Example Bazel target for the generator
+		"--",
+		"generate-library",
+		"--api-root=" + sourceDir,
+		"--generator-input=" + inputDir,
+		"--output=" + outputDir,
+		"--library-id=" + lib.ID,
+	}
+	cmd := exec.CommandContext(ctx, "bazel", args...)
+	cmd.Dir = repoDir // Bazel commands typically run from the repo root.
+	return runCommand(cmd)
+}
 
-	// In a real container, we would set the working directory for the command.
-	// if err := os.Chdir(workDir); err != nil {
-	// 	 return fmt.Errorf("failed to change directory to %s: %w", workDir, err)
-	// }
+// buildCmd handles the 'build' step by invoking 'bazel test'.
+func buildCmd(ctx context.Context) error {
+	slog.Info("build command started (Bazel strategy)")
+	reqPath := filepath.Join(librarianDir, "build-request.json")
 
-	// 1. Run tests using Bazel.
-	// The target would correspond to the specific library being built.
-	log.Println("Running tests with Bazel...")
-	target := fmt.Sprintf("//%s/...", lib.ID) // e.g. //google-cloud-storage/...
-	testCmd := exec.Command("bazel", "test", target)
-	testCmd.Dir = workDir
-	log.Printf("Simulating command: %s", testCmd.String())
-	// if err := testCmd.Run(); err != nil {
-	// 	return fmt.Errorf("bazel test failed: %w", err)
-	// }
+	reqFile, err := os.ReadFile(reqPath)
+	if err != nil {
+		return fmt.Errorf("failed to read build-request.json from %s: %w", librarianDir, err)
+	}
 
+	var lib Library
+	if err := json.Unmarshal(reqFile, &lib); err != nil {
+		return fmt.Errorf("failed to unmarshal build request: %w", err)
+	}
+
+	// Determine the Bazel target from the library's source paths.
+	if len(lib.SourcePaths) == 0 {
+		return fmt.Errorf("cannot determine build target: source_paths is empty for library %s", lib.ID)
+	}
+	target := "//" + lib.SourcePaths[0] + "/..." // e.g., //internal/storage/...
+	slog.Info("determined bazel target", "target", target)
+
+	args := []string{"test", target}
+	cmd := exec.CommandContext(ctx, "bazel", args...)
+	cmd.Dir = repoDir
+	return runCommand(cmd)
+}
+
+// runCommand executes a command and logs its output.
+func runCommand(cmd *exec.Cmd) error {
+	cmd.Env = os.Environ()
+	slog.Info("running command", "command", strings.Join(cmd.Args, " "), "dir", cmd.Dir)
+
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		slog.Info("command output", "output", string(output))
+	}
+	if err != nil {
+		return fmt.Errorf("command failed with error: %w", err)
+	}
 	return nil
 }
