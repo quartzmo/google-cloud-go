@@ -1,12 +1,12 @@
-# Go Client Library Generator
+# Go GAPIC Librarian
 
-This document describes the Go Client Library Generator, a containerized application that serves as the Go-specific component within the reimagined Librarian pipeline. Its primary responsibility is to generate high-quality, release-ready Go client libraries based on API definitions.
+This document describes the Go GAPIC Librarian, a containerized application that serves as the Go-specific code generator within the Librarian pipeline. Its responsibility is to generate release-ready Go GAPIC client libraries based on googleapis API definitions.
 
-This generator adheres to a strict container contract defined by the central Librarian tool, ensuring a modular, maintainable, and secure generation process. It is a direct implementation of the principles laid out in the [Librarian CLI: Reimagined](http://goto.google.com/librarian:cli-reimagined) design.
+This generator adheres to the container contract defined by the central Librarian tool. It is an implementation of the [Librarian CLI: Reimagined](http://goto.google.com/librarian:cli-reimagined) design.
 
 ## Overview
 
-The Librarian pipeline delegates language-specific tasks to dedicated container images. This `generator` is the official image for Go. The central Librarian tool is responsible for orchestrating the overall workflow, which includes:
+The Librarian pipeline delegates language-specific tasks to dedicated container images. This project provides the container image for Go. The central Librarian tool is responsible for orchestrating the overall workflow, which includes:
 
 1.  Reading configuration from a `state.yaml` file in the target language repository.
 2.  Preparing the necessary inputs (API source files, configuration).
@@ -23,15 +23,17 @@ There are three primary commands defined in the contract: `configure`, `generate
 
 ### `generate` Command
 
-This is the core command, responsible for the actual code generation.
+This is the core command, responsible for the actual code generation. It is invoked by the Librarian when it needs to generate a Go client library. The container expects a specific set of inputs to be provided as mounted directories and files.
 
-| Context | Type | Description |
+#### **Inputs for the `generate` Command**
+
+| Path or Argument | Type | Description for Go Generator |
 | :--- | :--- | :--- |
-| `/librarian/generate-request.json` | Mount (Read) | A JSON file that describes which library to generate. Its schema is a subset of the `libraries` entry in `state.yaml`. |
-| `/input` | Mount (Read) | The contents of the `.librarian/generator-input` folder from the language repository. This can contain shared or language-specific files needed for generation. |
-| `/output` | Mount (Write) | An empty directory where the container must write all generated code. The directory structure should match the desired structure in the final repository. |
-| `/source` | Mount (Read) | A directory containing the API definitions (e.g., a clone of `googleapis/googleapis`). |
-| `generate` | Positional Arg | The command that invokes this operation. |
+| `generate` | Positional Argument | The string `generate` is the first argument passed to the container, signaling that it must execute the primary code generation logic. |
+| `/librarian/generate-request.json` | File (Read) | A JSON file containing the metadata for the specific library to be generated. This is a subset of the main `state.yaml` file and tells the generator *which* APIs to build (e.g., `google/storage/v1`). Our Go application reads this file to know which API directory to process within the `/source` mount. |
+| `/source` | Directory (Read) | This mount contains a complete checkout of the `googleapis` repository. It serves as the single, critical **import path** (`-I/source`) for the `protoc` command, allowing it to find and resolve all proto definitions and their dependencies (e.g., `google/api/annotations.proto`). |
+| `/output` | Directory (Write) | An empty directory that the generator writes all of its output to. This includes the generated `.pb.go` and `_gapic.go` files. The Librarian is responsible for copying the contents of this directory to the correct location in the final language repository. |
+| `/input` | Directory (Read) | Contains the contents of the `.librarian/generator-input` directory from the language repository. For Go, this directory is **not** used as a proto import path. Instead, it is reserved for future use, such as holding templates for `README.md` files or scripts for post-generation code tweaks. |
 
 ### How `generate` Works
 
@@ -94,7 +96,7 @@ The `generateCmd` function orchestrates the generation logic:
     *The `protoc` function in `main.go` assembles the arguments:*
     ```go
     func protoc(ctx context.Context, lib *Library, api *API) error {
-        // ... finds all .proto files ...
+        // ... finds all .proto files in the API's source directory ...
 
         // Example: gapicImportPath becomes "cloud.google.com/go/storage/apiv1"
         gapicImportPath := filepath.Join("cloud.google.com/go", lib.SourcePaths[0])
@@ -104,9 +106,9 @@ The `generateCmd` function orchestrates the generation logic:
             "--go_out=" + outputDir,
             "--go-gapic_out=" + outputDir,
             "--go-gapic_opt=go-gapic-package=" + gapicImportPath,
-            // Include paths for googleapis and shared generator inputs
+            // The /source mount contains the entire googleapis repository,
+            // which is used as the sole import path for protoc.
             "-I=" + sourceDir,
-            "-I=" + inputDir,
         }
         if api.ServiceConfig != "" {
             args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(apiSourceDir, api.ServiceConfig))
@@ -189,3 +191,37 @@ docker run --rm \
 ```
 
 After the command completes, the `/tmp/mock/output` directory will contain the generated Go files, just as it would in the real pipeline.
+
+## Next Steps and Future Improvements
+
+While the current generator provides the core functionality for the `generate` command, several key improvements are planned to make it a complete and robust solution.
+
+### 1. Implement `configure` and `build` Commands
+
+To fully comply with the Librarian container contract, the remaining commands must be implemented.
+
+*   **`configure` Command:** This command is essential for onboarding new libraries. It will read a minimal request file (e.g., with just a library ID) and enrich it with Go-specific conventions, such as setting a default version (`0.1.0`) and deriving `source_paths` from the ID (e.g., `google-cloud-storage-v1` -> `storage/apiv1`). The enriched configuration will be written back to `/librarian/configure-response.json`.
+
+*   **`build` Command:** This command serves as a critical quality gate. When invoked, it will have the entire language repository (with the newly generated code) mounted at `/repo`. Its job is to navigate to the correct Go module directory (using the `source_paths` from the build request) and run `go build ./...` and `go test ./...` to validate the generated code.
+
+### 2. Make Configuration More Robust
+
+The generator currently makes simplifying assumptions that should be replaced with explicit configuration.
+
+*   **Go Module Path:** The base Go module path (e.g., `cloud.google.com/go`) is currently hardcoded. This should be passed in the `generate-request.json` to make the generator more versatile and reusable across different Go projects.
+
+### 3. Add Support for Post-Processing
+
+The `/input` directory is currently ignored but is intended for post-generation "tweaks."
+
+*   **Templates:** The generator should check for template files (e.g., `README.md.tpl`) in the `/input` directory. If found, it should execute them using Go's `text/template` package with the library's metadata and write the result to the `/output` directory.
+*   **Scripts:** The generator could look for a `post-generate.sh` script in `/input` and execute it after `protoc` finishes to perform custom cleanup or code modifications.
+
+### 4. Add Formal Go Module and Tests
+
+To improve maintainability, the generator itself should be a proper Go module with its own tests.
+
+*   **`go.mod`:** Initialize a `go.mod` file for the generator application.
+*   **Unit Tests:** Add `_test.go` files to unit test specific logic, such as the construction of `protoc` arguments.
+*   **Integration Tests:** Create tests that simulate the container's environment by creating temporary directories for `/source`, `/librarian`, and `/output`, allowing for end-to-end validation of the `generateCmd` logic.
+

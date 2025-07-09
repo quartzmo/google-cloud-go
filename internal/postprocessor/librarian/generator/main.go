@@ -25,12 +25,26 @@ import (
 	"strings"
 )
 
+// The following constants define the directory layout that this generator expects
+// to be present in its container, as per the Librarian container contract.
 const (
-	// Mount points for the generator container.
+	// librarianDir is the mount point for inputs from the Librarian tool itself.
+	// It contains the primary request file (e.g., generate-request.json).
 	librarianDir = "/librarian"
-	inputDir     = "/input"
-	outputDir    = "/output"
-	sourceDir    = "/source"
+
+	// inputDir is the mount point for the `.librarian/generator-input` directory
+	// from the language repository. It is reserved for language-specific templates
+	// or post-processing scripts and is NOT used as a proto import path.
+	inputDir = "/input"
+
+	// outputDir is the mount point for an empty directory where this generator
+	// must write all its output. The Librarian tool is responsible for copying
+	// the contents of this directory to the language repository.
+	outputDir = "/output"
+
+	// sourceDir is the mount point for a complete checkout of the googleapis
+	// repository. It serves as the sole proto import path for protoc.
+	sourceDir = "/source"
 )
 
 // main is the entrypoint for the generator container.
@@ -44,6 +58,7 @@ func main() {
 }
 
 // run executes the appropriate command based on the container's invocation arguments.
+// The first argument to the container is always the command (e.g., "generate").
 func run(ctx context.Context) error {
 	if len(os.Args) < 2 {
 		return fmt.Errorf("expected at least one argument for the command, got %d", len(os.Args)-1)
@@ -69,6 +84,8 @@ func run(ctx context.Context) error {
 func generateCmd(ctx context.Context) error {
 	slog.Info("generate command started")
 
+	// The request file tells the generator which library and APIs to generate.
+	// It is prepared by the Librarian tool and mounted at /librarian.
 	reqPath := filepath.Join(librarianDir, "generate-request.json")
 	slog.Info("reading generate request", "path", reqPath)
 
@@ -102,6 +119,7 @@ func generateCmd(ctx context.Context) error {
 
 // protoc constructs and executes the protoc command for a given API.
 func protoc(ctx context.Context, lib *Library, api *API) error {
+	// The API's source directory is relative to the /source mount.
 	apiSourceDir := filepath.Join(sourceDir, api.Path)
 	slog.Info("running protoc", "api_source_dir", apiSourceDir)
 
@@ -139,13 +157,14 @@ func protoc(ctx context.Context, lib *Library, api *API) error {
 	// Construct the protoc command arguments.
 	args := []string{
 		"--experimental_allow_proto3_optional",
+		// All generated files are written to the /output directory.
 		"--go_out=" + outputDir,
 		"--go-gapic_out=" + outputDir,
 		"--go-gapic_opt=go-gapic-package=" + gapicImportPath,
-		// The 'input' directory from the language repo is mounted at /input.
-		// It can contain shared proto definitions.
+		// The -I flag specifies the import path for protoc. All protos
+		// and their dependencies must be findable from this path.
+		// The /source mount contains the complete googleapis repository.
 		"-I=" + sourceDir,
-		"-I=" + inputDir,
 	}
 	if api.ServiceConfig != "" {
 		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(apiSourceDir, api.ServiceConfig))
