@@ -91,14 +91,7 @@ func generateCmd(ctx context.Context) error {
 
 	reqFile, err := os.ReadFile(reqPath)
 	if err != nil {
-		// The user provided mock input is named configure-request.json, so we'll
-		// check for that as a fallback for local testing.
-		reqPath = filepath.Join(librarianDir, "configure-request.json")
-		slog.Info("generate-request.json not found, trying configure-request.json", "path", reqPath)
-		reqFile, err = os.ReadFile(reqPath)
-		if err != nil {
-			return fmt.Errorf("failed to read request file from %s: %w", librarianDir, err)
-		}
+		return fmt.Errorf("failed to read generate-request.json from %s: %w", reqPath, err)
 	}
 
 	var lib Library
@@ -141,17 +134,9 @@ func protoc(ctx context.Context, lib *Library, api *API) error {
 	}
 	slog.Info("found proto files", "files", protoFiles)
 
-	// Determine the Go import path for the generated GAPIC client.
-	// This is a simplification. A real implementation might get this from a
-	// more reliable source in the request. We assume the first source_path
-	// is the primary one for the library.
-	var gapicImportPath string
-	if len(lib.SourcePaths) > 0 {
-		// Assuming a base module path. This should ideally be discovered or configured.
-		// Example: cloud.google.com/go/storage/apiv1
-		gapicImportPath = filepath.Join("cloud.google.com/go", lib.SourcePaths[0])
-	} else {
-		return fmt.Errorf("cannot determine go-gapic-package: source_paths is empty for library %s", lib.ID)
+	importPath, err := gapicImportPath(api.Path)
+	if err != nil {
+		return err
 	}
 
 	// Construct the protoc command arguments.
@@ -160,20 +145,49 @@ func protoc(ctx context.Context, lib *Library, api *API) error {
 		// All generated files are written to the /output directory.
 		"--go_out=" + outputDir,
 		"--go-gapic_out=" + outputDir,
-		"--go-gapic_opt=go-gapic-package=" + gapicImportPath,
+		"--go-gapic_opt=go-gapic-package=" + importPath,
 		// The -I flag specifies the import path for protoc. All protos
 		// and their dependencies must be findable from this path.
 		// The /source mount contains the complete googleapis repository.
 		"-I=" + sourceDir,
+		"-I=" + inputDir + "/my_extra_protos", // TODO: Are there additional protos needed in Go?
 	}
 	if api.ServiceConfig != "" {
 		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(apiSourceDir, api.ServiceConfig))
 	}
 
+	// TODO: Other potential gapic options: Where do we source these from?
+	// TODO: Is this list complete? Are there other `go_gapic_opt` options needed for gapic-generator-go?
+	// "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(uc.serviceDir, uc.serviceYaml))
+	// "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(uc.serviceDir, uc.grpcServiceConfig))
+	// "--go_gapic_opt", fmt.Sprintf("transport=%s", uc.transport)
+	// "--go_gapic_opt", fmt.Sprintf("release-level=%s", uc.releaseLevel)
+	// "--go_gapic_opt", "metadata"
+	// "--go_gapic_opt", "diregapic"
+	// "--go_gapic_opt", "rest-numeric-enums"
+
 	args = append(args, protoFiles...)
 
 	cmd := exec.CommandContext(ctx, "protoc", args...)
 	return runCommand(cmd)
+}
+
+// gapicImportPath determines the Go import path for a generated GAPIC client
+// from a given API proto path.
+// E.g., "google/cloud/asset/v1" -> "cloud.google.com/go/asset/apiv1", nil
+func gapicImportPath(apiPath string) (string, error) {
+	pathParts := strings.Split(apiPath, "/")
+	if len(pathParts) < 2 {
+		return "", fmt.Errorf("cannot determine service and version from api.Path: %q", apiPath)
+	}
+	serviceName := pathParts[len(pathParts)-2]
+	serviceVersion := pathParts[len(pathParts)-1]
+	goVersion := "api" + strings.TrimPrefix(serviceVersion, "v")
+	// This base path should ideally be configurable, but this is a reasonable default.
+	baseImportPath := "cloud.google.com/go"
+	importPath := filepath.Join(baseImportPath, serviceName, goVersion)
+	slog.Info("derived go import path", "path", importPath)
+	return importPath, nil
 }
 
 // runCommand executes a command and logs its output.
@@ -193,11 +207,11 @@ func runCommand(cmd *exec.Cmd) error {
 }
 
 // Library corresponds to a single library definition from the state file.
+// It is unmarshalled from the generate-request.json file.
 type Library struct {
-	ID          string   `json:"id"`
-	Version     string   `json:"version"`
-	APIs        []API    `json:"apis"`
-	SourcePaths []string `json:"source_paths"`
+	ID      string `json:"id"`
+	Version string `json:"version,omitempty"`
+	APIs    []API  `json:"apis"`
 }
 
 // API corresponds to a single API definition within a library.

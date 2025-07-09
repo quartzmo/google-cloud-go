@@ -1,0 +1,9 @@
+{
+  "id": "google-cloud-asset-v1",
+  "apis": [
+    {
+      "path": "google/cloud/asset/v1",
+      "service_config": "cloudasset_v1.yaml"
+    }
+  ]
+}
