@@ -100,7 +100,6 @@ use (
 	./internal/postprocessor/librarian/bazel
 	./internal/postprocessor/librarian/generator
 	./internal/postprocessor/librarian/patron
-	./internal/postprocessor/librarian/protoc
 	./internal/protoveneer
 	./iot
 	./kms
