@@ -94,15 +94,15 @@ func generateCmd(ctx context.Context) error {
 		return fmt.Errorf("failed to read generate-request.json from %s: %w", reqPath, err)
 	}
 
-	var lib Library
-	if err := json.Unmarshal(reqFile, &lib); err != nil {
+	var generateReq LibrarianRequest
+	if err := json.Unmarshal(reqFile, &generateReq); err != nil {
 		return fmt.Errorf("failed to unmarshal request file %s: %w", reqPath, err)
 	}
-	slog.Info("successfully unmarshalled request", "library_id", lib.ID)
+	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
 
-	for _, api := range lib.APIs {
-		if err := protoc(ctx, &lib, &api); err != nil {
-			return fmt.Errorf("protoc failed for api %q in library %q: %w", api.Path, lib.ID, err)
+	for _, api := range generateReq.APIs {
+		if err := protoc(ctx, &generateReq, &api); err != nil {
+			return fmt.Errorf("protoc failed for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
 	}
 
@@ -110,33 +110,37 @@ func generateCmd(ctx context.Context) error {
 	return nil
 }
 
-// protoc constructs and executes the protoc command for a given API.
-func protoc(ctx context.Context, lib *Library, api *API) error {
-	// The API's source directory is relative to the /source mount.
-	apiSourceDir := filepath.Join(sourceDir, api.Path)
-	slog.Info("running protoc", "api_source_dir", apiSourceDir)
+// protoc constructs and executes the protoc command for a given APIRequest.
+func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest) error {
+	serviceDir := filepath.Join(sourceDir, api.Path)
+	slog.Info("running protoc", "api_service_dir", serviceDir)
 
 	// Gather all .proto files in the API's source directory.
-	entries, err := os.ReadDir(apiSourceDir)
+	entries, err := os.ReadDir(serviceDir)
 	if err != nil {
-		return fmt.Errorf("failed to read API source directory %s: %w", apiSourceDir, err)
+		return fmt.Errorf("failed to read API source directory %s: %w", serviceDir, err)
 	}
 
 	var protoFiles []string
 	for _, entry := range entries {
 		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
-			protoFiles = append(protoFiles, filepath.Join(apiSourceDir, entry.Name()))
+			protoFiles = append(protoFiles, filepath.Join(serviceDir, entry.Name()))
 		}
 	}
 
 	if len(protoFiles) == 0 {
-		return fmt.Errorf("no .proto files found in %s", apiSourceDir)
+		return fmt.Errorf("no .proto files found in %s", serviceDir)
 	}
 	slog.Info("found proto files", "files", protoFiles)
 
 	importPath, err := gapicImportPath(api.Path)
 	if err != nil {
 		return err
+	}
+
+	uc, err := NewBazelConfig(serviceDir)
+	if err != nil {
+		return fmt.Errorf("failed to load unified config for %s: %w", serviceDir, err)
 	}
 
 	// Construct the protoc command arguments.
@@ -150,21 +154,38 @@ func protoc(ctx context.Context, lib *Library, api *API) error {
 		// and their dependencies must be findable from this path.
 		// The /source mount contains the complete googleapis repository.
 		"-I=" + sourceDir,
-		"-I=" + inputDir + "/my_extra_protos", // TODO: Are there additional protos needed in Go?
 	}
 	if api.ServiceConfig != "" {
-		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(apiSourceDir, api.ServiceConfig))
+		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(serviceDir, api.ServiceConfig))
 	}
 
-	// TODO: Other potential gapic options: Where do we source these from?
-	// TODO: Is this list complete? Are there other `go_gapic_opt` options needed for gapic-generator-go?
-	// "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(uc.serviceDir, uc.serviceYaml))
-	// "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(uc.serviceDir, uc.grpcServiceConfig))
-	// "--go_gapic_opt", fmt.Sprintf("transport=%s", uc.transport)
-	// "--go_gapic_opt", fmt.Sprintf("release-level=%s", uc.releaseLevel)
-	// "--go_gapic_opt", "metadata"
-	// "--go_gapic_opt", "diregapic"
-	// "--go_gapic_opt", "rest-numeric-enums"
+	if uc.gapicImportPath != "" {
+		args = append(args,
+			"--go_gapic_out", "/output",
+			"--go_gapic_opt", fmt.Sprintf("go-gapic-package=%s", uc.gapicImportPath),
+		)
+		if uc.serviceYaml != "" {
+			args = append(args, "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(uc.serviceDir, uc.serviceYaml)))
+		}
+		if uc.grpcServiceConfig != "" {
+			args = append(args, "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(uc.serviceDir, uc.grpcServiceConfig)))
+		}
+		if uc.transport != "" {
+			args = append(args, "--go_gapic_opt", fmt.Sprintf("transport=%s", uc.transport))
+		}
+		if uc.releaseLevel != "" {
+			args = append(args, "--go_gapic_opt", fmt.Sprintf("release-level=%s", uc.releaseLevel))
+		}
+		if uc.metadata {
+			args = append(args, "--go_gapic_opt", "metadata")
+		}
+		if uc.diregapic {
+			args = append(args, "--go_gapic_opt", "diregapic")
+		}
+		if uc.restNumericEnums {
+			args = append(args, "--go_gapic_opt", "rest-numeric-enums")
+		}
+	}
 
 	args = append(args, protoFiles...)
 
@@ -206,16 +227,16 @@ func runCommand(cmd *exec.Cmd) error {
 	return nil
 }
 
-// Library corresponds to a single library definition from the state file.
+// LibrarianRequest corresponds to a librarian request (e.g., generate-request.json).
 // It is unmarshalled from the generate-request.json file.
-type Library struct {
-	ID      string `json:"id"`
-	Version string `json:"version,omitempty"`
-	APIs    []API  `json:"apis"`
+type LibrarianRequest struct {
+	ID      string       `json:"id"`
+	Version string       `json:"version,omitempty"`
+	APIs    []APIRequest `json:"apis"`
 }
 
-// API corresponds to a single API definition within a library.
-type API struct {
+// APIRequest corresponds to a single API definition within a librarian request.
+type APIRequest struct {
 	Path          string `json:"path"`
 	ServiceConfig string `json:"service_config"`
 }
