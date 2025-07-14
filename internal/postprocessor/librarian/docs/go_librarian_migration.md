@@ -7,9 +7,9 @@
 
 # Objective
 
-Onboard Go GAPIC client library generation to Librarian 0.2 per the contract outlined in [librarian CLI: Reimagined](https://docs.google.com/document/d/1bQ5aXIfQEauI6cHlZKh8R6PBAG_sfHRaDxHcxRCQMYI/edit) and [Librarian: Scrappy Onboarding Guide](https://docs.google.com/document/d/1_A8O-UE-RKPPG3_4bK4gDQJBPlrcq28rctJSohXIjCY/edit).
+Onboard Go GAPIC client library generation to Librarian 0.2 per the contract outlined in [librarian CLI: Reimagined](go/librarian:cli-reimagined) and [Librarian: Onboarding Guide](go/librarian:language-onboarding).
 
-The scope of this effort is to onboard a single straightforward, typical client, such as the Google Cloud Asset client shown in the examples below. The generated assets must be perfectly backward-compatible with the existing published assets for the client in the google-cloud-go repo, including the snippets files located outside of the client module in google-cloud-[go/internal/generated/snippets](https://goto.google.com/internal). One exception to backward compatibility is the update of shared files
+The scope of this effort is to onboard a single straightforward, typical client, such as the Google Cloud Asset client shown in the examples below. The generated assets must be perfectly backward-compatible with the existing published assets for the client in the google-cloud-go repo, including the snippets files located outside of the client module in google-cloud-[go/internal/generated/snippets](TODO). One exception to backward compatibility is the update of shared files
 
 # Background
 

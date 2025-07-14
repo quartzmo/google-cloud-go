@@ -24,7 +24,7 @@ This document outlines a phased migration to a containerized Go generator that c
 
 The new workflow will be orchestrated by the central Librarian tool and will consist of three main stages, each corresponding to a command passed to the Go `librariangen` container:
 
-1.  **`configure` (Onboarding):** For a new library, Librarian invokes the `librariangen` container to enrich a minimal request with Go-specific conventions (e.g., deriving module paths) and returns a full configuration to be stored in the repository's central `state.yaml`.
+1.  **`configure` (Onboarding):** For a new library, Librarian invokes the `librariangen` container to enrich a minimal request with Go-specific conventions (e.g., deriving module paths) and returns a full configuration to be stored in the repository's central `state.yaml`. See 
 2.  **`generate` (Code Generation):** Librarian invokes the `librariangen` container to perform the core code generation. The container receives API definitions, invokes `protoc`, runs a custom Go post-processor, and writes the final, backward-compatible code to an `/output` directory.
 3.  **`build` (Validation):** Librarian copies the generated code into a full checkout of the `google-cloud-go` repository and invokes the `librariangen` container to run `go build` and `go test`, validating that the new code integrates correctly.
 
@@ -35,21 +35,62 @@ The high-level workflow for the `generate` step is as follows:
     *   `/source`: A complete checkout of the `googleapis` repository.
     *   `/librarian`: Contains a `generate-request.json` file specifying which API to generate.
     *   `/output`: An empty directory for the generated files.
-    *   `/input`: A directory for optional, user-provided templates and scripts.
-3.  **Execution:** The Go `librariangen` binary runs inside the container.
+*   `/input`: A directory for optional, user-provided templates and scripts.
+1.  **Execution:** The Go `librariangen` binary runs inside the container.
     *   It parses the `generate-request.json` to determine the target API.
     *   It invokes `protoc` with the Go plugins (`protoc-gen-go`, `protoc-gen-go_gapic`), using `/source` as the single import path (`-I`).
     *   It writes all generated `.go` files directly to the `/output` directory.
-4.  **Post-Processing:** After generation, a built-in post-processing step formats the code, generates a `version.go` file, and runs linters.
-5.  **Output:** The Librarian tool takes the contents of the `/output` directory and copies them to the correct location in the target `google-cloud-go` repository.
+2.  **Post-Processing:** After generation, a built-in post-processing step formats the code, generates a `version.go` file, and runs linters.
+3.  **Output:** The Librarian tool takes the contents of the `/output` directory and copies them to the correct location in the target `google-cloud-go` repository.
 
 This approach encapsulates the entire generation process within a single, well-defined container, eliminating dependencies on the legacy `bazel-bot` and `OwlBot` infrastructure.
 
 # Detailed Design
 
-The implementation consists of a Go application packaged into a Docker container. The application's entrypoint dispatches to different logic based on the command-line argument provided by Librarian.
+## Repository configuration
 
-### **Container (`librariangen/Dockerfile`)**
+All language repos will have a single state.yaml file located in their language repo at the location `.librarian/state.yaml`.
+This file lets librarian know which libraries it is responsible for generating.
+
+```yaml
+# The name of the image and tag to use for generation.
+image: "gcr.io/cloud-go-infra/librarian-go:latest"
+
+# The state of each library which is released within this repository.
+libraries:
+  - # The library identifier, which for Go is the module name.
+    id: "google-cloud-workflows"
+    # The last version that was released, if any.
+    version: "1.14.2"
+    # The commit hash from the googleapis/googleapis repository at which
+    # the library was last generated.
+    last_generated_commit: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+    # APIs that are bundled as a part of this library.
+    apis:
+      - path: "google/cloud/workflows/v1"
+        service_config: "workflows_v1.yaml"
+      - path: "google/cloud/workflows/v1beta"
+        service_config: "workflows_v1beta.yaml"
+      - path: "google/cloud/workflows/executions/v1"
+        service_config: "workflowexecutions_v1.yaml"
+      - path: "google/cloud/workflows/executions/v1beta"
+        service_config: "workflowexecutions_v1beta.yaml"
+    # Directories to which librarian contributes code. For Go, this is
+    # typically the module directory.
+    source_paths:
+      - "workflows"
+      - "internal/generated/snippets/workflows"
+    # Files/directories to leave untouched during generation.
+    # This is useful for preserving handwritten helper files or customizations.
+    preserve_regex:
+      - "workflows/aliasshim/aliasshim.go"
+      - "workflows/CHANGES.md"
+      - "workflows/internal/version.go"
+```
+
+## **Container (`librariangen/Dockerfile`)**
+
+The implementation consists of a Go application packaged into a Docker container. The application's entrypoint dispatches to different logic based on the command-line argument provided by Librarian.
 
 The `librariangen` Docker container is built using a MOSS-compliant `debian:12` base image. The Dockerfile is responsible for:
 *   Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools.
@@ -57,11 +98,11 @@ The `librariangen` Docker container is built using a MOSS-compliant `debian:12` 
 *   Copying the `librariangen`'s Go source code into the image and building it into a single executable binary (`/librariangen`).
 *   Setting the `ENTRYPOINT` to this `/librariangen` binary.
 
-### **Librarian Go Generator Binary (`librariangen/main.go`)**
+## **Librarian Go Generator Binary (`librariangen/main.go`)**
 
 The Go application serves as the container's entrypoint. It is a simple command-line application that dispatches logic based on the first argument passed to the container.
 
-#### **`generate` Command**
+### **`generate` Command**
 This is the core command, responsible for the main generation logic.
 
 ##### **Inputs:**
@@ -69,11 +110,8 @@ This is the core command, responsible for the main generation logic.
     *   `/source`: A full checkout of the `googleapis` repository.
     *   `/input`: Optional user-provided templates or scripts.
 
-##### **Execution:**
-
-1.  **Parse Request:** Read and unmarshal the `generate-request.json`. This can range from a simple, single-API client to a complex one with multiple versions and nested API paths.
-
-    *Example `generate-request.json` (Complex: Workflows):*
+###### generate-request.json
+    *Example `generate-request.json`:*
     ```json
     {
       "id": "google-cloud-workflows",
@@ -85,36 +123,29 @@ This is the core command, responsible for the main generation logic.
       ]
     }
     ```
+
+The `librariangen` container receives an empty `/output` directory, which is expected to be populated with the generated files. This `/output` directory represents the root of the destination repository (i.e., `google-cloud-go`).
+
+For example, to generate files for the `workflows` module, the generator should write them to `/output/workflows/`.
+To update snippet files, it would write to the corresponding path, such as `/output/internal/generated/snippets/workflows`.
+
+Librarian copies files from the `/output` directory into the repository based on the `source_paths` configured for the library in `generate-request.json` via `state.yaml`.
+This copy operation is destructive: if a `source_paths` entry is set to a directory (e.g., `workflows`), any files or subdirectories
+within `<repo>/workflows` that are *not* present in `/output/workflows` will be deleted.
+
+To preserve files that are not generated, such as the manually created `workflows/aliasshim/aliasshim.go`, configure the `preserve_regex` in `generate-request.json`.
+By adding entries to this list, specific files or directories can be excluded from the copy-and-delete process, ensuring they are preserved in the final repository.
+For example, to preserve the `aliasshim` directory, a `preserve_regex` entry of `workflows/aliasshim/.*` would be used.
+
+##### **Execution:**
+
+1.  **Parse Request:** Read and unmarshal the `generate-request.json`. This can range from a simple, single-API client to a complex one with multiple versions and nested API paths.
 2.  **Load Configuration:** For each API, it parses the corresponding `BUILD.bazel` file located in the `/source` directory (e.g., `/source/google/cloud/workflows/v1/BUILD.bazel`). This file is the source of truth for `protoc` options such as the transport layer (`grpc+rest`), service YAML path, and release level. This avoids having to duplicate this configuration.
 3.  **Execute `protoc`:** It constructs and executes the `protoc` command. See [gapicgen](TODO #gapicgen) below for more details.
 4.  **Post-Process:** Run the adapted google-cloud-go post-processor on the contents of `/output` to ensure backward compatibility. This includes formatting, linting, generating `version.go`, and updating files. See [postprocessor](TODO #postprocessor) below for more details.
 
 ##### **Output:**
     *   `/output`: A directory containing the complete, formatted, and backward-compatible Go client library, matching the structure of the legacy system.
-
-*Example expected output structure for `google-cloud-workflows`:*
-```shell
-
-└── google-cloud-go
-    ├── workflows
-    │   └── apiv1
-    │       ├── workflows_client.go
-    │       ├── workflowspb
-    │       │   ├── workflows_service.pb.go
-    │       │   └── ...
-    │       ├── doc.go
-    │       └── ...
-    └── internal
-        └── generated
-            └── snippets
-                └── workflows
-                    └── apiv1
-                        ├── Client
-                        │   ├── AnalyzeIamPolicy
-                        │   │   └── main.go
-                        │   └── ...
-                        └── snippet_metadata.google.cloud.workflows.v1.json
-```
 
 #### gapicgen
 
@@ -156,7 +187,8 @@ The key arguments to `protoc`are:
 
 #### postprocessor
 
-As you can see from the directory structure above, some client library files must be written outside of the module's source tree (the `google-cloud-go/workflows` directory). In fact, there are a number of locations in the `google-cloud-go` monorepo that reference client library modules and must potentially be updated. They are:
+As you can see from the directory structure above, some client library files must be written outside of the module's source tree (the `google-cloud-go/workflows` directory).
+In fact, there are a number of locations in the `google-cloud-go` monorepo that reference client library modules and must potentially be updated. They are:
 
 *   `.github/.OwlBot.yaml` (manual edit)
 *   `internal/generated/snippets/<module>/<version>/**/*`
@@ -183,6 +215,10 @@ Shared files modified by the current post-processor:
 *   `.release-please-manifest-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` adds new modules to this manifest with a starting version of `0.0.0`.
 *   `go.work`: `generateModule` in `main.go` calls a command to add new modules to the `go.work` file.
 *   `release-please-config-yoshi-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` regenerates this file to include all modules.
+
+A limitation of the current Librarian model is its inability to safely handle concurrent updates to shared, repository-level files (e.g., `go.work`, `.release-please-manifest-submodules.json`).
+The generation process is isolated and not given the full repository context, in order to avoid merge conflicts if multiple generation processes attempt to modify the same shared file.
+While the post-processor has the technical ability to write to any location in the `/output` directory, its isolation prevents it from reading files from the repository.
 
 See [Risks - Updating Shared Files](TODO) below for more details.
 
@@ -269,6 +305,7 @@ The migration to the new generator will be a gradual process, managed by the cen
 *   **New servers:** No new infrastructure is required; this system leverages the existing Librarian pipeline.
 *   **Supportability:** Long-term support will be greatly simplified. The generator is a standard Go application, making it easier for any Go developer to contribute, as opposed to the specialized Bazel knowledge required by the old system.
 *   **Timeline:** The rollout will proceed on a library-by-library basis over the course of a few weeks, starting with a few pilot libraries to validate the process before expanding to all Go clients.
+
 # Risks
 
 *   **Hidden Logic in Configuration Files:** The `.OwlBot.yaml` and underlying Bazel rules may contain subtle, undocumented logic. Migrating this correctly is critical for backward compatibility.
@@ -281,3 +318,169 @@ The migration to the new generator will be a gradual process, managed by the cen
     *   **Mitigation:** Before migrating each library, perform a `diff` between the output of the old and new systems. Any significant differences will be investigated and the post-processor will be adjusted as needed.
 *   **Tool Versioning:** The generator's `Dockerfile` pins versions for `protoc` and its Go plugins. These dependencies can become stale.
     *   **Mitigation:** Implement automated dependency scanning (e.g., RenovateBot) for the `Dockerfile` to create pull requests whenever new tool versions are released.
+
+# Appendix A: Directory Listings
+
+## `googleapis/googleapis-gen`
+
+Current output structure for the `cloud.google.com/go/workflows` module, after `gapicgen` but before `postprocessor`. The OwlBot copy operation merges these separate output paths in `googleapis-gen`.
+
+For brevity, `v1beta` paths are not shown.
+
+```shell
+googleapis-gen/google/cloud/workflows/v1/cloud.google.com/go$ tree .
+.
+├── internal
+│   └── generated
+│       └── snippets
+│           └── workflows
+│               └── apiv1
+│                   ├── Client
+│                   │   ├── CreateWorkflow
+│                   │   │   └── main.go
+│                   │   ├── DeleteOperation
+│                   │   │   └── main.go
+│                   │   ├── DeleteWorkflow
+│                   │   │   └── main.go
+│                   │   ├── GetLocation
+│                   │   │   └── main.go
+│                   │   ├── GetOperation
+│                   │   │   └── main.go
+│                   │   ├── GetWorkflow
+│                   │   │   └── main.go
+│                   │   ├── ListLocations
+│                   │   │   └── main.go
+│                   │   ├── ListOperations
+│                   │   │   └── main.go
+│                   │   ├── ListWorkflowRevisions
+│                   │   │   └── main.go
+│                   │   ├── ListWorkflows
+│                   │   │   └── main.go
+│                   │   └── UpdateWorkflow
+│                   │       └── main.go
+│                   └── snippet_metadata.google.cloud.workflows.v1.json
+└── workflows
+    └── apiv1
+        ├── auxiliary.go
+        ├── auxiliary_go123.go
+        ├── doc.go
+        ├── gapic_metadata.json
+        ├── helpers.go
+        ├── workflows_client_example_go123_test.go
+        ├── workflows_client_example_test.go
+        ├── workflows_client.go
+        └── workflowspb
+            └── workflows.pb.go
+googleapis-gen/google/cloud/workflows/executions/v1/cloud.google.com/go$ tree .
+.
+├── internal
+│   └── generated
+│       └── snippets
+│           └── workflows
+│               └── executions
+│                   └── apiv1
+│                       ├── Client
+│                       │   ├── CancelExecution
+│                       │   │   └── main.go
+│                       │   ├── CreateExecution
+│                       │   │   └── main.go
+│                       │   ├── GetExecution
+│                       │   │   └── main.go
+│                       │   └── ListExecutions
+│                       │       └── main.go
+│                       └── snippet_metadata.google.cloud.workflows.executions.v1.json
+└── workflows
+    └── executions
+        └── apiv1
+            ├── auxiliary.go
+            ├── auxiliary_go123.go
+            ├── doc.go
+            ├── executions_client_example_go123_test.go
+            ├── executions_client_example_test.go
+            ├── executions_client.go
+            ├── executionspb
+            │   └── executions.pb.go
+            ├── gapic_metadata.json
+            └── helpers.go
+```
+
+## `googleapis/google-cloud-go`
+
+Current output structure for the `cloud.google.com/go/workflows` module, final result after both `gapicgen` and `postprocessor`:
+
+```shell
+google-cloud-go/workflows$ tree .
+.
+├── aliasshim
+│   └── aliasshim.go
+├── apiv1
+│   ├── auxiliary.go
+│   ├── auxiliary_go123.go
+│   ├── doc.go
+│   ├── gapic_metadata.json
+│   ├── helpers.go
+│   ├── version.go
+│   ├── workflows_client_example_go123_test.go
+│   ├── workflows_client_example_test.go
+│   ├── workflows_client.go
+│   └── workflowspb
+│       └── workflows.pb.go
+├── CHANGES.md
+├── executions
+│   ├── apiv1
+│   │   ├── auxiliary.go
+│   │   ├── auxiliary_go123.go
+│   │   ├── doc.go
+│   │   ├── executions_client_example_go123_test.go
+│   │   ├── executions_client_example_test.go
+│   │   ├── executions_client.go
+│   │   ├── executionspb
+│   │   │   └── executions.pb.go
+│   │   ├── gapic_metadata.json
+│   │   ├── helpers.go
+│   │   └── version.go
+├── go.mod
+├── go.sum
+├── internal
+│   └── version.go
+└── README.md
+google-cloud-go/internal/generated/snippets/workflows$ tree .
+.
+├── apiv1
+│   ├── Client
+│   │   ├── CreateWorkflow
+│   │   │   └── main.go
+│   │   ├── DeleteOperation
+│   │   │   └── main.go
+│   │   ├── DeleteWorkflow
+│   │   │   └── main.go
+│   │   ├── GetLocation
+│   │   │   └── main.go
+│   │   ├── GetOperation
+│   │   │   └── main.go
+│   │   ├── GetWorkflow
+│   │   │   └── main.go
+│   │   ├── ListLocations
+│   │   │   └── main.go
+│   │   ├── ListOperations
+│   │   │   └── main.go
+│   │   ├── ListWorkflowRevisions
+│   │   │   └── main.go
+│   │   ├── ListWorkflows
+│   │   │   └── main.go
+│   │   └── UpdateWorkflow
+│   │       └── main.go
+│   └── snippet_metadata.google.cloud.workflows.v1.json
+└── executions
+    ├── apiv1
+    │   ├── Client
+    │   │   ├── CancelExecution
+    │   │   │   └── main.go
+    │   │   ├── CreateExecution
+    │   │   │   └── main.go
+    │   │   ├── GetExecution
+    │   │   │   └── main.go
+    │   │   └── ListExecutions
+    │   │       └── main.go
+    │   └── snippet_metadata.google.cloud.workflows.executions.v1.json
+```
