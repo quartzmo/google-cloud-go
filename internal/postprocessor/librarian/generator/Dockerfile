@@ -39,6 +39,9 @@ RUN apt-get update && \
     wget && \
     rm -rf /var/lib/apt/lists/*
 
+
+###### Dependencies ######
+
 # Install Go.
 # TODO: Per MOSS guidance, this dependency should be pulled from an internal
 # "airlock" repository. The URL will need to be updated.
@@ -47,7 +50,7 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O go.tar.gz && \
     rm go.tar.gz && \
     go version
 
-# Install protoc (Protobuf Compiler).
+# Install required protoc (Protobuf Compiler) for Librarian.
 # TODO: Per MOSS guidance, this dependency should be pulled from an internal
 # "airlock" repository. The URL will need to be updated.
 RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip -O protoc.zip && \
@@ -55,17 +58,39 @@ RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC
     rm protoc.zip && \
     protoc --version
 
-# Install required Go tools for protoc.
+# Install required Go tools for Librarian protoc.
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v${GO_PROTOC_PLUGIN_VERSION} && \
     go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v${GAPIC_GENERATOR_VERSION}
 
-# Copy the generator source code into the image.
-WORKDIR /app
-COPY main.go .
+# Install required Go tools for post-processor
+RUN (export GOTOOLCHAIN='auto' && \
+    go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    go install github.com/jstemmer/go-junit-report@latest && \
+    go install golang.org/x/lint/golint@latest && \
+    go install golang.org/x/tools/cmd/goimports@latest)
 
-# Build the generator binary.
-RUN go build -o /generator main.go
+###### Post-processor ######
+
+# Copy the post-processor source code into the image.
+WORKDIR /postprocessor
+# Current dir: google-cloud-go/internal/postprocessor/librarian/generator
+COPY ../../*.go ./
+COPY ../../go.mod ./
+COPY ../../config.yaml ./
+
+# go build with no path looks in current directory (/postprocessor) and finds package main
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o post_processor
+
+###### Librarian ######
+
+# Copy the generator source code into the image.
+WORKDIR /librarian
+COPY *.go ./
+COPY go.mod ./
+
+# go build with no path looks in current directory (/postprocessor) and finds package main
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o librarian_generator
 
 # Set the entrypoint for the container to run the compiled generator.
 # The Librarian will provide commands like 'generate' as arguments.
-ENTRYPOINT ["/generator"]
+CMD [ "/librarian/librarian_generator"]

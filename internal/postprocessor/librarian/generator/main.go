@@ -101,9 +101,20 @@ func generateCmd(ctx context.Context) error {
 	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
 
 	for _, api := range generateReq.APIs {
-		if err := protoc(ctx, &generateReq, &api); err != nil {
+		serviceDir := filepath.Join(sourceDir, api.Path)
+		slog.Info("running protoc", "api_service_dir", serviceDir)
+		bazelConfig, err := NewBazelConfig(serviceDir)
+		if err != nil {
+			return fmt.Errorf("failed to load unified config for %s: %w", serviceDir, err)
+		}
+		slog.Info("unified config loaded", "conf", fmt.Sprintf("%+v", bazelConfig))
+		if err := protoc(ctx, &generateReq, &api, serviceDir, bazelConfig); err != nil {
 			return fmt.Errorf("protoc failed for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
+	}
+
+	if err := postProcess(ctx, &generateReq, bazelConfig); err != nil {
+		return fmt.Errorf("post-processing failed for library %q: %w", generateReq.ID, err)
 	}
 
 	slog.Info("generate command finished")
@@ -111,9 +122,7 @@ func generateCmd(ctx context.Context) error {
 }
 
 // protoc constructs and executes the protoc command for a given APIRequest.
-func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest) error {
-	serviceDir := filepath.Join(sourceDir, api.Path)
-	slog.Info("running protoc", "api_service_dir", serviceDir)
+func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest, serviceDir string, bazelConfig *BazelConfig) error {
 
 	// Gather all .proto files in the API's source directory.
 	entries, err := os.ReadDir(serviceDir)
@@ -133,23 +142,13 @@ func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest) error {
 	}
 	slog.Info("found proto files", "files", protoFiles)
 
-	importPath, err := gapicImportPath(api.Path)
-	if err != nil {
-		return err
-	}
-
-	uc, err := NewBazelConfig(serviceDir)
-	if err != nil {
-		return fmt.Errorf("failed to load unified config for %s: %w", serviceDir, err)
-	}
-
 	// Construct the protoc command arguments.
 	args := []string{
 		"--experimental_allow_proto3_optional",
 		// All generated files are written to the /output directory.
 		"--go_out=" + outputDir,
 		"--go-gapic_out=" + outputDir,
-		"--go-gapic_opt=go-gapic-package=" + importPath,
+		"--go-gapic_opt=go-gapic-package=" + bazelConfig.gapicImportPath,
 		// The -I flag specifies the import path for protoc. All protos
 		// and their dependencies must be findable from this path.
 		// The /source mount contains the complete googleapis repository.
@@ -158,57 +157,32 @@ func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest) error {
 	if api.ServiceConfig != "" {
 		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(serviceDir, api.ServiceConfig))
 	}
-
-	if uc.gapicImportPath != "" {
-		args = append(args,
-			"--go_gapic_out", "/output",
-			"--go_gapic_opt", fmt.Sprintf("go-gapic-package=%s", uc.gapicImportPath),
-		)
-		if uc.serviceYaml != "" {
-			args = append(args, "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(uc.serviceDir, uc.serviceYaml)))
-		}
-		if uc.grpcServiceConfig != "" {
-			args = append(args, "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(uc.serviceDir, uc.grpcServiceConfig)))
-		}
-		if uc.transport != "" {
-			args = append(args, "--go_gapic_opt", fmt.Sprintf("transport=%s", uc.transport))
-		}
-		if uc.releaseLevel != "" {
-			args = append(args, "--go_gapic_opt", fmt.Sprintf("release-level=%s", uc.releaseLevel))
-		}
-		if uc.metadata {
-			args = append(args, "--go_gapic_opt", "metadata")
-		}
-		if uc.diregapic {
-			args = append(args, "--go_gapic_opt", "diregapic")
-		}
-		if uc.restNumericEnums {
-			args = append(args, "--go_gapic_opt", "rest-numeric-enums")
-		}
+	if bazelConfig.serviceYaml != "" {
+		args = append(args, "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(bazelConfig.serviceDir, bazelConfig.serviceYaml)))
+	}
+	if bazelConfig.grpcServiceConfig != "" {
+		args = append(args, "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(bazelConfig.serviceDir, bazelConfig.grpcServiceConfig)))
+	}
+	if bazelConfig.transport != "" {
+		args = append(args, "--go_gapic_opt", fmt.Sprintf("transport=%s", bazelConfig.transport))
+	}
+	if bazelConfig.releaseLevel != "" {
+		args = append(args, "--go_gapic_opt", fmt.Sprintf("release-level=%s", bazelConfig.releaseLevel))
+	}
+	if bazelConfig.metadata {
+		args = append(args, "--go_gapic_opt", "metadata")
+	}
+	if bazelConfig.diregapic {
+		args = append(args, "--go_gapic_opt", "diregapic")
+	}
+	if bazelConfig.restNumericEnums {
+		args = append(args, "--go_gapic_opt", "rest-numeric-enums")
 	}
 
 	args = append(args, protoFiles...)
 
 	cmd := exec.CommandContext(ctx, "protoc", args...)
 	return runCommand(cmd)
-}
-
-// gapicImportPath determines the Go import path for a generated GAPIC client
-// from a given API proto path.
-// E.g., "google/cloud/asset/v1" -> "cloud.google.com/go/asset/apiv1", nil
-func gapicImportPath(apiPath string) (string, error) {
-	pathParts := strings.Split(apiPath, "/")
-	if len(pathParts) < 2 {
-		return "", fmt.Errorf("cannot determine service and version from api.Path: %q", apiPath)
-	}
-	serviceName := pathParts[len(pathParts)-2]
-	serviceVersion := pathParts[len(pathParts)-1]
-	goVersion := "api" + strings.TrimPrefix(serviceVersion, "v")
-	// This base path should ideally be configurable, but this is a reasonable default.
-	baseImportPath := "cloud.google.com/go"
-	importPath := filepath.Join(baseImportPath, serviceName, goVersion)
-	slog.Info("derived go import path", "path", importPath)
-	return importPath, nil
 }
 
 // runCommand executes a command and logs its output.
