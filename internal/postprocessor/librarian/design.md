@@ -51,7 +51,7 @@ This approach encapsulates the entire generation process within a single, well-d
 ## Repository configuration
 
 All language repos will have a single `state.yaml` file located in their language repo at the location `<repo>/.librarian/state.yaml`.
-This file lets librarian know which libraries it is responsible for generating.
+This file lets Librarian know which libraries it is responsible for generating.
 
 ```yaml
 # The name of the image and tag to use for generation.
@@ -311,7 +311,7 @@ A multi-faceted testing strategy is required to ensure a safe and successful mig
 
 # Alternatives considered
 
-1.  **Adapt Bazel-based generation:** The primary alternative is to continue using the existing Bazel-based system. This was rejected due to its high maintenance cost, complexity, and security concerns. It also prevents Go from aligning with the standardized, cross-language Librarian pipeline.
+1.  **Adapt Bazel-based generation:** The primary alternative is to continue using the existing Bazel-based system. This was rejected due to its high maintenance cost and complexity. It also prevents Go from aligning with the standardized, cross-language Librarian pipeline.
 
 2.  **Adapt the old post-processor:** An attempt was made to run the existing `postprocessor` tool inside the container. This was deemed infeasible. The tool is not designed to be portable; it requires a full `google-cloud-go` repository context (including a `.git` directory and `go.work` file) and contains logic for interacting with GitHub pull requests, none of which are available or relevant inside the generator container. The chosen approach of a new, focused post-processor is far simpler and more robust.
 
@@ -322,7 +322,7 @@ Please refer to [Librarian project - CLI + Python + Go](https://github.com/orgs/
 # Documentation plan
 
 *   **`librariangen/README.md`:** This will be the setup and usage document for `librariangen` and its Docker container, detailing its commands and how to run it both locally and using Docker. It will also cover typical development tasks such as running tests and re-publishing the Docker container after changes.
-*   **`librariangen/design.md`:** (This Design Doc) This document will serve as the persistent, high-level design reference, providing a deeper look at at `librariangen` in the context of google-cloud-go.
+*   **`librariangen/design.md`:** (This Design Doc) This document will serve as the persistent, high-level design reference, providing a deeper look at `librariangen` in the context of google-cloud-go.
 *   **`librariangen/tasks.md`:** A frequently-updated backlog of features to be added. This may be deleted after all libraries have been migrated and bazel-bot/OwlBot is removed from the pipeline.
 
 All documentation will be updated and made available before the first library is fully migrated to the new system.
@@ -335,11 +335,11 @@ The migration to Librarian should be a gradual process. Starting at the end of J
 2.  Onboard the eight "difficult" google-cloud-go submodules as Librarian libraries. This group is defined in gapic-generator-go's [test.sh](https://github.com/googleapis/gapic-generator-go/blob/main/test.sh).
     *   `datastore`
     *   `kms`
-    *   `datacatal`
-    *   `texttospe`
+    *   `datacatalog`
+    *   `texttospeech`
     *   `storage`
     *   `retail`
-    *   `apigeecon`
+    *   `apigeeconnect`
     *   `bigquery`
 3.  Onboard all remaining google-cloud-go submodules as Librarian libraries.
 
