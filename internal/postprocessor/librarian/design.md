@@ -1,4 +1,4 @@
-# Go Librarian Migration
+# Go Librarian Onboarding - Generate
 
 # Objective
 
@@ -102,6 +102,8 @@ The `librariangen` Docker container must use a MOSS-compliant base image, such a
 ## **Librarian Go generator binary (`librariangen/main.go`)**
 
 The Go application serves as the container's entrypoint. It is a simple command-line application that dispatches logic based on the first argument passed to the container.
+
+TODO: Specify Docker-independent local CLI functionality.
 
 ### **`generate` command**
 This is the core command, responsible for the main generation logic. Its primary input is `/librarian/generate-request.json`, a JSON file describing the library and APIs to generate:
@@ -349,16 +351,45 @@ Please refer to [Librarian project - CLI + Python + Go](https://github.com/orgs/
 
 # Risks
 
-*   **Hidden logic in configuration files:** The `.OwlBot.yaml` and underlying Bazel rules may contain subtle, undocumented logic. Migrating this correctly is critical for backward compatibility.
-    *   **Mitigation:** Before full migration, perform a thorough audit of the existing configuration to identify and categorize all implicit logic. Allocate specific time for this investigation.
-*   **Updating shared files:** The migration must correctly handle updates to files that are shared across multiple Go modules (e.g., `internal/.repo-metadata-full.json`).
-    *   **Mitigation:** The post-processor must be explicitly designed to handle these shared files, potentially by having a separate processing step that runs after all individual libraries are generated.
-*   **Configuration edge cases:** The logic for parsing `BUILD.bazel` files in `googleapis` might not account for all possible configurations or edge cases.
-    *   **Mitigation:** Test the generator against a diverse set of existing Go libraries before the migration. Add robust error handling for unexpected `BUILD.bazel` structures.
-*   **Post-processing discrepancies:** The new, streamlined post-processor might not perform all the subtle modifications that the old system did, potentially leading to minor differences in generated code.
-    *   **Mitigation:** Before migrating each library, perform a `diff` between the output of the old and new systems. Any significant differences will be investigated and the post-processor will be adjusted as needed.
-*   **Tool versioning:** The generator's `Dockerfile` pins versions for `protoc` and its Go plugins. These dependencies can become stale.
-    *   **Mitigation:** Implement automated dependency scanning (e.g., RenovateBot) for the `Dockerfile` to create pull requests whenever new tool versions are released.
+## Hidden logic in configuration files
+
+The `.OwlBot.yaml` and underlying Bazel rules may contain subtle, undocumented logic. Migrating this correctly is critical for backward compatibility.
+
+### Mitigation
+
+Before full migration, perform a thorough audit of the existing configuration to identify and categorize all implicit logic. Allocate specific time for this investigation.
+
+## Updating shared files
+
+The migration must correctly handle updates to files that are shared across multiple Go modules (e.g., `internal/.repo-metadata-full.json`).
+
+### Mitigation
+
+The post-processor must be explicitly designed to handle these shared files, potentially by having a separate processing step that runs after all individual libraries are generated.
+
+## Configuration edge cases
+
+The logic for parsing `BUILD.bazel` files in `googleapis` might not account for all possible configurations or edge cases.
+
+### Mitigation
+
+Test the generator against a diverse set of existing Go libraries before the migration. Add robust error handling for unexpected `BUILD.bazel` structures.
+
+## Post-processing discrepancies
+
+The new, streamlined post-processor might not perform all the subtle modifications that the old system did, potentially leading to minor differences in generated code.
+
+### Mitigation
+
+Before migrating each library, perform a `diff` between the output of the old and new systems. Any significant differences will be investigated and the post-processor will be adjusted as needed.
+
+## Tool versioning
+
+The generator's `Dockerfile` pins versions for `protoc` and its Go plugins. These dependencies can become stale.
+
+### Mitigation
+
+Implement automated dependency scanning (e.g., `RenovateBot`) for the `Dockerfile` to create pull requests whenever new tool versions are released.
 
 # Appendix A: Directory Listings
 
