@@ -12,9 +12,9 @@ The initial scope of this effort is to regenerate a single, existing client libr
 
 The current code generation process is a complex, multi-stage pipeline distributed across several tools and repositories:
 
-1.  **Generation:** `bazel-bot` invokes `protoc` via Bazel to generate Go source code from the public API definitions in `googleapis` into a private intermediate repository, `googleapis-gen`.
-2.  **File placement:** `OwlBot` opens a PR to copy the generated code from `googleapis-gen` into the final `google-cloud-go` repository, applying rules for file inclusion and preservation defined in a central `.OwlBot.yaml` file.
-3.  **Post-processing:** In the PR, a Go-specific `OwlBot` post-processor runs to perform cleanup, apply code modifications, and generate additional files (like `go.mod`, `README.md` and `version.go`) that are not handled by the core `protoc` generators.
+1. **Generation:** `bazel-bot` invokes `protoc` via Bazel to generate Go source code from the public API definitions in `googleapis` into a private intermediate repository, `googleapis-gen`.
+2. **File placement:** `OwlBot` opens a PR to copy the generated code from `googleapis-gen` into the final `google-cloud-go` repository, applying rules for file inclusion and preservation defined in a central `.OwlBot.yaml` file.
+3. **Post-processing:** In the PR, a Go-specific `OwlBot` post-processor runs to perform cleanup, apply code modifications, and generate additional files (like `go.mod`, `README.md` and `version.go`) that are not handled by the core `protoc` generators.
 
 This architecture is vulnerable to security and maintenance concerns, as documented in the [1PP Engineering Plan](https://docs.google.com/document/d/1_iLARXR7ZEJALSyXUjdFWhFbSJq9GCDhu1BUUIPKLkI/edit). The Librarian project was created to replace this legacy toolchain with a standardized, secure, and maintainable system.
 
@@ -24,25 +24,25 @@ This document outlines a phased migration to a containerized Go generator that c
 
 The new workflow will be orchestrated by the central Librarian tool and will consist of three main steps, each corresponding to a command passed to the Go `librariangen` Docker container:
 
-1.  **`configure` (onboarding):** For a new library, Librarian invokes `librariangen` to enrich a minimal request with Go-specific conventions (e.g., deriving Go module paths) and preserved file paths. The container returns a full configuration to be stored in the repository's central `state.yaml`. See [librarian CLI: generate command](http://go/librarian:generate-command) for more details.
-2.  **`generate` (code generation):** Librarian invokes `librariangen` to perform the core code generation. The container receives API definitions, invokes `protoc`, runs a custom Go post-processor, and writes the final, backward-compatible code to an `/output` directory.
-3.  **`build` (validation):** After Librarian has copied the generated code into a full checkout of the `google-cloud-go` repository, it invokes `librariangen` to run `go build` and `go test`, validating that the new code integrates correctly.
+1. **`configure` (onboarding):** For a new library, Librarian invokes `librariangen` to enrich a minimal request with Go-specific conventions (e.g., deriving Go module paths) and preserved file paths. The container returns a full configuration to be stored in the repository's central `state.yaml`. See [librarian CLI: generate command](http://go/librarian:generate-command) for more details.
+2. **`generate` (code generation):** Librarian invokes `librariangen` to perform the core code generation. The container receives API definitions, invokes `protoc`, runs a custom Go post-processor, and writes the final, backward-compatible code to an `/output` directory.
+3. **`build` (validation):** After Librarian has copied the generated code into a full checkout of the `google-cloud-go` repository, it invokes `librariangen` to run `go build` and `go test`, validating that the new code integrates correctly.
 
 This document focuses on the delivery of a production-ready solution for the `generate` step. The high-level workflow for the `generate` step is as follows:
 
-1.  **Invocation:** The Librarian tool invokes the Go `librariangen` container with the `generate` command.
-2.  **Inputs:** Librarian provides all necessary inputs as mounted directories:
-    *   `/source`: A complete checkout of the `googleapis` repository.
-    *   `/librarian`: A configuration directory containing a `generate-request.json` file that specifies which APIs to generate for the target library.
-    *   `/output`: An empty directory where the container must write all generated code. The directory structure should match the desired structure in the final repository.
-    *   `/input`: A directory for optional, user-provided configuration, templates or scripts. Contains the contents of the `.librarian/generator-input` folder from the google-cloud-go repository.
-3.  **Execution:** Inside the container, the `librariangen` binary runs the `gapicgen` component:
-    *   `gapicgen` parses the `generate-request.json` to determine the target library and target APIs.
-    *   `gapicgen` invokes `protoc` with the Go plugins (`protoc-gen-go`, `protoc-gen-go_gapic`), passing `/source` as the import path (`-I`).
-    *   `gapicgen` writes all generated `.go` files directly to the `/output` directory.
-4.  **Post-processing:** After generation, the `librariangen` binary runs the `postprocessor` component:
-    *   `postprocessor` generates files such as `version.go`, invokes `go mod tidy`, formats the code and runs linters.
-5.  **Output:** The Librarian tool takes the contents of the `/output` directory and copies them to the correct location in the target `google-cloud-go` repository, based on the `source_paths` and `preserve_regex` rules in `state.yaml`.
+1. **Invocation:** The Librarian tool invokes the Go `librariangen` container with the `generate` command.
+2. **Inputs:** Librarian provides all necessary inputs as mounted directories:
+   * `/source`: A complete checkout of the `googleapis` repository.
+   * `/librarian`: A configuration directory containing a `generate-request.json` file that specifies which APIs to generate for the target library.
+   * `/output`: An empty directory where the container must write all generated code. The directory structure should match the desired structure in the final repository.
+   * `/input`: A directory for optional, user-provided configuration, templates or scripts. Contains the contents of the `.librarian/generator-input` folder from the google-cloud-go repository.
+3. **Execution:** Inside the container, the `librariangen` binary runs the `gapicgen` component:
+   * `gapicgen` parses the `generate-request.json` to determine the target library and target APIs.
+   * `gapicgen` invokes `protoc` with the Go plugins (`protoc-gen-go`, `protoc-gen-go_gapic`), passing `/source` as the import path (`-I`).
+   * `gapicgen` writes all generated `.go` files directly to the `/output` directory.
+4. **Post-processing:** After generation, the `librariangen` binary runs the `postprocessor` component:
+   * `postprocessor` generates files such as `version.go`, invokes `go mod tidy`, formats the code and runs linters.
+5. **Output:** The Librarian tool takes the contents of the `/output` directory and copies them to the correct location in the target `google-cloud-go` repository, based on the `source_paths` and `preserve_regex` rules in `state.yaml`.
 
 This approach encapsulates the entire generation process within a single, well-defined container, eliminating dependencies on the legacy `bazel-bot` and `OwlBot` infrastructure.
 
@@ -94,10 +94,10 @@ libraries:
 The implementation consists of a Go application packaged into a Docker container. The use of `ENTRYPOINT` configures the container to act as an executable, allowing the Librarian tool to pass commands like `generate` and `configure` as arguments directly to it. The application's binary then dispatches to different logic based on the command-line argument provided by Librarian.
 
 The `librariangen` Docker container must use a MOSS-compliant base image, such as `marketplace.gcr.io/google/debian12:latest`. The Dockerfile is responsible for:
-*   Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools. The versions must be copied from current existing configuration for `bazel-bot/OwlBot` and `google-cloud-go`, such as the `_protobuf_version` setting in the `googleapis` [WORKSPACE](https://github.com/googleapis/googleapis/blob/master/WORKSPACE) file.
-*   Installing the latest compatible versions of the necessary Go protoc plugins: `google.golang.org/protobuf/cmd/protoc-gen-go` and `github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic`.
-*   Copying `librariangen`'s Go source code into the image and building it into a single executable binary (`/librariangen`).
-*   Setting the `ENTRYPOINT` to the `/librariangen` binary.
+* Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools. The versions must be copied from current existing configuration for `bazel-bot/OwlBot` and `google-cloud-go`, such as the `_protobuf_version` setting in the `googleapis` [WORKSPACE](https://github.com/googleapis/googleapis/blob/master/WORKSPACE) file.
+* Installing the latest compatible versions of the necessary Go protoc plugins: `google.golang.org/protobuf/cmd/protoc-gen-go` and `github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic`.
+* Copying `librariangen`'s Go source code into the image and building it into a single executable binary (`/librariangen`).
+* Setting the `ENTRYPOINT` to the `/librariangen` binary.
 
 ## **Librarian Go generator binary (`librariangen/main.go`)**
 
@@ -134,10 +134,10 @@ For example, to preserve the `aliasshim` directory, a `preserve_regex` entry of 
 
 #### **Execution:**
 
-1.  **Parse Request:** The `gapicgen` component reads `generate-request.json`. The request can range from a simple, single-API client to a complex one with multiple versions and nested API paths.
-2.  **Load Configuration:** For each API, `gapicgen` parses the corresponding `BUILD.bazel` file located in the `/source` directory (e.g., `/source/google/cloud/workflows/v1/BUILD.bazel`). This file is the source of truth for `protoc` options such as the transport layer (`grpc+rest`), service YAML path, and release level. This avoids having to duplicate this configuration.
-3.  **Execute `protoc`:** `gapicgen` constructs and executes the `protoc` command. See [gapicgen](TODO #gapicgen) below for more details.
-4.  **Post-process:** The `postprocessor` component manipulates the contents of `/output` to produce a release-ready library. This step must ensure backward compatibility. This includes formatting, linting, generating `version.go`, and updating files. See [postprocessor](TODO #postprocessor) below for more details.
+1. **Parse Request:** The `gapicgen` component reads `generate-request.json`. The request can range from a simple, single-API client to a complex one with multiple versions and nested API paths.
+2. **Load Configuration:** For each API, `gapicgen` parses the corresponding `BUILD.bazel` file located in the `/source` directory (e.g., `/source/google/cloud/workflows/v1/BUILD.bazel`). This file is the source of truth for `protoc` options such as the transport layer (`grpc+rest`), service YAML path, and release level. This avoids having to duplicate this configuration.
+3. **Execute `protoc`:** `gapicgen` constructs and executes the `protoc` command. See [gapicgen](TODO #gapicgen) below for more details.
+4. **Post-process:** The `postprocessor` component manipulates the contents of `/output` to produce a release-ready library. This step must ensure backward compatibility. This includes formatting, linting, generating `version.go`, and updating files. See [postprocessor](TODO #postprocessor) below for more details.
 
 The final result is the complete, formatted, and backward-compatible Go client library, matching the structure of the existing library.
 
@@ -146,8 +146,6 @@ The final result is the complete, formatted, and backward-compatible Go client l
 `gapicgen` is a standard Go application, making it easier for any Go developer to contribute, as opposed to the specialized Bazel knowledge required by the `bazel-bot` system.
 
 Let's look at the details for our `workflows` example. The paths in `generate-request.json` may include nested APIs as in the real-world configuration for `workflows`:
-
-##### 
 
 ```json
 {
@@ -171,7 +169,6 @@ Let's look at the details for our `workflows` example. The paths in `generate-re
     }
   ]
 }
-
 ```
 
 For each path, `gapicgen` must load the Bazel rules configuration from the corresponding `BUILD.bazel` file in `googleapis`. Here is the configuration for `workflows/executions/v1`:
@@ -209,9 +206,9 @@ go_gapic_library(
 See the complete set of protos and related BUILD.bazel configuration for the Workflows API at [googleapis/google/cloud/workflows](https://github.com/googleapis/googleapis/tree/master/google/cloud/workflows/).
 
 The key arguments to `protoc` are:
-*   `--go_out=/output` and `--go-gapic_out=/output`: Directs all generated files to the output directory.
-*   `-I=/source`: Sets the `googleapis` checkout as the sole import path, simplifying dependency resolution.
-*   `--go-gapic_opt=...`: Passes the options extracted from the `BUILD.bazel` file to the [Go GAPIC Generator](https://github.com/googleapis/gapic-generator-go)).
+* `--go_out=/output` and `--go-gapic_out=/output`: Directs all generated files to the output directory.
+* `-I=/source`: Sets the `googleapis` checkout as the sole import path, simplifying dependency resolution.
+* `--go-gapic_opt=...`: Passes the options extracted from the `BUILD.bazel` file to the [Go GAPIC Generator](https://github.com/googleapis/gapic-generator-go)).
 
 Example of complete `protoc` command for `workflows/executions`:
 
@@ -236,10 +233,10 @@ protoc \
 A critical design decision is to forgo the existing, complex [post-processor](https://github.com/googleapis/google-cloud-go/tree/main/internal/postprocessor) in favor of a new, lightweight implementation directly within the `librariangen` binary. The current post-processor is unsuitable as it depends on a full `google-cloud-go` repository checkout and makes calls to the GitHub API.
 
 The new, self-contained post-processor runs entirely within the `/output` directory and performs the following essential tasks:
-1.  **`goimports`:** Runs `goimports -w .` to format the generated code and fix imports.
-2.  **Module initialization:** Runs `go mod init` and `go mod tidy` to create a valid `go.mod` file for the newly generated code. This is a prerequisite for running other Go tools.
-3.  **`version.go` Generation:** A `version.go` file is generated for each new Go module, containing the library version provided in the request.
-4.  **Linting:** Runs `staticcheck ./...` to catch potential issues in the generated code.
+1. **`goimports`:** Runs `goimports -w .` to format the generated code and fix imports.
+2. **Module initialization:** Runs `go mod init` and `go mod tidy` to create a valid `go.mod` file for the newly generated code. This is a prerequisite for running other Go tools.
+3. **`version.go` Generation:** A `version.go` file is generated for each new Go module, containing the library version provided in the request.
+4. **Linting:** Runs `staticcheck ./...` to catch potential issues in the generated code.
 
 As shown in the fragment directory structure below, snippet files must be written outside of the Go module's source tree (the `google-cloud-go/workflows` directory).
 
@@ -263,31 +260,31 @@ googleapis-gen/google/cloud/workflows/v1/cloud.google.com/go$ tree .
 
 In fact, there are a number of locations in the `google-cloud-go` monorepo that reference client library Go modules and must potentially be updated. They are:
 
-*   `.github/.OwlBot.yaml` (manual edit)
-*   `internal/generated/snippets/<module>/<version>/**/*`
-*   `internal/generated/snippets/go.mod`
-*   `internal/postprocessor/config.yaml` (manual edit)
-*   `internal/.repo-metadata-full.json`
-*   `.release-please-manifest-submodules.json`
-*   `go.work`
-*   `release-please-config-yoshi-submodules.json`
+* `.github/.OwlBot.yaml` (manual edit)
+* `internal/generated/snippets/<module>/<version>/**/*`
+* `internal/generated/snippets/go.mod`
+* `internal/postprocessor/config.yaml` (manual edit)
+* `internal/.repo-metadata-full.json`
+* `.release-please-manifest-submodules.json`
+* `go.work`
+* `release-please-config-yoshi-submodules.json`
 
 Shared files NOT modified by the current post-processor:
 
-*   `.github/.OwlBot.yaml`: This is a manual edit. The post-processor does not modify it.
-*   `internal/postprocessor/config.yaml`: This is a manual edit. The post-processor does not modify it.
+* `.github/.OwlBot.yaml`: This is a manual edit. The post-processor does not modify it.
+* `internal/postprocessor/config.yaml`: This is a manual edit. The post-processor does not modify it.
 
 Module-scope (not shared) files modified by the current post-processor:
 
-*   `internal/generated/snippets/<module>/<version>/**/*`: `UpdateSnippetsMetadata` in `main.go` updates a $VERSION placeholder within the `snippet_metadata.google.cloud.*.json` files within the `<module>/<version>` directories.
+* `internal/generated/snippets/<module>/<version>/**/*`: `UpdateSnippetsMetadata` in `main.go` updates a $VERSION placeholder within the `snippet_metadata.google.cloud.*.json` files within the `<module>/<version>` directories.
 
 Shared files modified by the current post-processor:
 
-*   `internal/.repo-metadata-full.json`: `Manifest` in `manifest.go` creates or truncates the file and then writes all Go modules' metadata to it.
-*   `internal/generated/snippets/go.mod`: `modEditReplaceInSnippets` in `main.go` runs a command to update this file when new Go modules are added.
-*   `.release-please-manifest-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` adds new Go modules to this manifest with a starting version of `0.0.0`.
-*   `go.work`: `generateModule` in `main.go` calls a command to add new Go modules to the `go.work` file.
-*   `release-please-config-yoshi-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` regenerates this file to include all Go modules.
+* `internal/.repo-metadata-full.json`: `Manifest` in `manifest.go` creates or truncates the file and then writes all Go modules' metadata to it.
+* `internal/generated/snippets/go.mod`: `modEditReplaceInSnippets` in `main.go` runs a command to update this file when new Go modules are added.
+* `.release-please-manifest-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` adds new Go modules to this manifest with a starting version of `0.0.0`.
+* `go.work`: `generateModule` in `main.go` calls a command to add new Go modules to the `go.work` file.
+* `release-please-config-yoshi-submodules.json`: `UpdateReleaseFiles` in `releaseplease.go` regenerates this file to include all Go modules.
 
 A limitation of the current Librarian model is its inability to safely handle concurrent updates to shared, repository-level files (e.g., `go.work`, `.release-please-manifest-submodules.json`).
 The generation process is isolated and not given the full repository context, in order to avoid merge conflicts if multiple generation processes attempt to modify the same shared file.
@@ -299,23 +296,23 @@ See [Risks - Updating Shared Files](TODO #risks) below for more details.
 
 A multi-faceted testing strategy is required to ensure a safe and successful migration.
 
-1.  **Manual E2E testing:**
-    *   **Phase 1 (Validation):** Manually run the `librarian` CLI to regenerate ~10 existing libraries. Verify that the process completes successfully and produces **no diff** against the current code.
-    *   **Phase 2 (Onboarding):** Use a script to run the `librarian` CLI to onboard the remaining ~180 libraries, verifying that the generated code also produces no diff.
+1. **Manual E2E testing:**
+   * **Phase 1 (Validation):** Manually run the `librarian` CLI to regenerate ~10 existing libraries. Verify that the process completes successfully and produces **no diff** against the current code.
+   * **Phase 2 (Onboarding):** Use a script to run the `librarian` CLI to onboard the remaining ~180 libraries, verifying that the generated code also produces no diff.
 
-2.  **Smoke testing:** A shell script will be used to perform basic validation of the Docker image itself, ensuring that all required tools (`protoc`, `go`, etc.) and dependencies are installed correctly. This can be run manually or as part of an automated CI check.
+2. **Smoke testing:** A shell script will be used to perform basic validation of the Docker image itself, ensuring that all required tools (`protoc`, `go`, etc.) and dependencies are installed correctly. This can be run manually or as part of an automated CI check.
 
-3.  **Docker-based E2E testing:** An automated script (`run-container-tests.sh`) will execute the full, containerized workflow for a suite of test libraries, covering important edge cases. A test is successful if:
-    *   The `generate` command completes successfully.
-    *   The subsequent `build` command, running against the newly generated code, passes all its tests (`go build` and `go test`).
+3. **Docker-based E2E testing:** An automated script (`run-container-tests.sh`) will execute the full, containerized workflow for a suite of test libraries, covering important edge cases. A test is successful if:
+   * The `generate` command completes successfully.
+   * The subsequent `build` command, running against the newly generated code, passes all its tests (`go build` and `go test`).
 
-4.  **Unit testing:** All new Go code written for the generator and post-processor will be accompanied by a comprehensive suite of unit tests.
+4. **Unit testing:** All new Go code written for the generator and post-processor will be accompanied by a comprehensive suite of unit tests.
 
 # Alternatives considered
 
-1.  **Adapt Bazel-based generation:** The primary alternative is to continue using the existing Bazel-based system. This was rejected due to its high maintenance cost and complexity. It also prevents Go from aligning with the standardized, cross-language Librarian pipeline.
+1. **Adapt Bazel-based generation:** The primary alternative is to continue using the existing Bazel-based system. This was rejected due to its high maintenance cost and complexity. It also prevents Go from aligning with the standardized, cross-language Librarian pipeline.
 
-2.  **Adapt the old post-processor:** An attempt was made to run the existing `postprocessor` tool inside the container. This was deemed infeasible. The tool is not designed to be portable; it requires a full `google-cloud-go` repository context (including a `.git` directory and `go.work` file) and contains logic for interacting with GitHub pull requests, none of which are available or relevant inside the generator container. The chosen approach of a new, focused post-processor is far simpler and more robust.
+2. **Adapt the old post-processor:** An attempt was made to run the existing `postprocessor` tool inside the container. This was deemed infeasible. The tool is not designed to be portable; it requires a full `google-cloud-go` repository context (including a `.git` directory and `go.work` file) and contains logic for interacting with GitHub pull requests, none of which are available or relevant inside the generator container. The chosen approach of a new, focused post-processor is far simpler and more robust.
 
 # Work Estimates
 
@@ -323,9 +320,9 @@ Please refer to [Librarian project - CLI + Python + Go](https://github.com/orgs/
 
 # Documentation plan
 
-*   **`librariangen/README.md`:** This will be the setup and usage document for `librariangen` and its Docker container, detailing its commands and how to run it both locally and using Docker. It will also cover typical development tasks such as running tests and re-publishing the Docker container after changes.
-*   **`librariangen/design.md`:** (This Design Doc) This document will serve as the persistent, high-level design reference, providing a deeper look at `librariangen` in the context of google-cloud-go.
-*   **`librariangen/tasks.md`:** A frequently-updated backlog of features to be added. This may be deleted after all libraries have been migrated and bazel-bot/OwlBot is removed from the pipeline.
+* **`librariangen/README.md`:** This will be the setup and usage document for `librariangen` and its Docker container, detailing its commands and how to run it both locally and using Docker. It will also cover typical development tasks such as running tests and re-publishing the Docker container after changes.
+* **`librariangen/design.md`:** (This Design Doc) This document will serve as the persistent, high-level design reference, providing a deeper look at `librariangen` in the context of google-cloud-go.
+* **`librariangen/tasks.md`:** A frequently-updated backlog of features to be added. This may be deleted after all libraries have been migrated and bazel-bot/OwlBot is removed from the pipeline.
 
 All documentation will be updated and made available before the first library is fully migrated to the new system.
 
@@ -333,17 +330,17 @@ All documentation will be updated and made available before the first library is
 
 The migration to Librarian should be a gradual process. Starting at the end of July, 2025, it should consist of an incremental rollout with canaries spanning August, 2025. Here are the stages:
 
-1.  Configure the repository for a single Librarian library to be generated by hand-coding Librarian's `state.yaml`. Test that the generated code is identical to the code produced by the old system. Release as usual with release-please.
-2.  Onboard the eight "difficult" google-cloud-go submodules as Librarian libraries. This group is defined in gapic-generator-go's [test.sh](https://github.com/googleapis/gapic-generator-go/blob/main/test.sh).
-    *   `datastore`
-    *   `kms`
-    *   `datacatalog`
-    *   `texttospeech`
-    *   `storage`
-    *   `retail`
-    *   `apigeeconnect`
-    *   `bigquery`
-3.  Onboard all remaining google-cloud-go submodules as Librarian libraries.
+1. Configure the repository for a single Librarian library to be generated by hand-coding Librarian's `state.yaml`. Test that the generated code is identical to the code produced by the old system. Release as usual with release-please.
+2. Onboard the eight "difficult" google-cloud-go submodules as Librarian libraries. This group is defined in gapic-generator-go's [test.sh](https://github.com/googleapis/gapic-generator-go/blob/main/test.sh).
+   * `datastore`
+   * `kms`
+   * `datacatalog`
+   * `texttospeech`
+   * `storage`
+   * `retail`
+   * `apigeeconnect`
+   * `bigquery`
+3. Onboard all remaining google-cloud-go submodules as Librarian libraries.
 
 ## Timeline 
 
@@ -443,6 +440,8 @@ googleapis-gen/google/cloud/workflows/v1/cloud.google.com/go$ tree .
         ├── workflows_client.go
         └── workflowspb
             └── workflows.pb.go
+```
+```shell
 googleapis-gen/google/cloud/workflows/executions/v1/cloud.google.com/go$ tree .
 .
 ├── internal
@@ -516,6 +515,8 @@ google-cloud-go/workflows$ tree .
 ├── internal
 │   └── version.go
 └── README.md
+```
+```shell
 google-cloud-go/internal/generated/snippets/workflows$ tree .
 .
 ├── apiv1
