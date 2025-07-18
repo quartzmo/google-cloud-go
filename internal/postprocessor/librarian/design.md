@@ -370,29 +370,29 @@ Please refer to [Librarian project - CLI + Python + Go](https://github.com/orgs/
 
 # Risks
 
-## Hidden logic in configuration files
-
-The `.OwlBot.yaml` and underlying Bazel rules may contain subtle, undocumented logic. Migrating this correctly is critical for backward compatibility.
-
-### Mitigation
-
-Before full migration, perform a thorough audit of the existing configuration to identify and categorize all implicit logic. Allocate specific time for this investigation.
-
-## Updating shared files
-
-The migration must correctly handle updates to files that are shared across multiple Go modules (e.g., `internal/.repo-metadata-full.json`).
-
-### Mitigation
-
-The post-processor must be explicitly designed to handle these shared files, potentially by having a separate processing step that runs after all individual libraries are generated.
-
-## Configuration edge cases
+## Difficulty replacing Bazel for all APIs
 
 The logic for parsing `BUILD.bazel` files in `googleapis` might not account for all possible configurations or edge cases.
 
 ### Mitigation
 
-Test the generator against a diverse set of existing Go libraries before the migration. Add robust error handling for unexpected `BUILD.bazel` structures.
+Fall back to using Bazel instead of direct protoc within `librariangen`.
+
+## Hidden OwlBot logic
+
+The `.OwlBot.yaml` and underlying Bazel rules may contain subtle, undocumented logic. Migrating this correctly is critical for backward compatibility.
+
+### Mitigation
+
+During the full migration, identify and categorize all implicit logic. Allocate specific time for handling these cases.
+
+## Updating global files
+
+The migration must correctly handle updates to files that are shared across multiple Go modules (e.g., `internal/.repo-metadata-full.json`).
+
+### Mitigation
+
+The post-processor must be explicitly designed to handle global files, potentially by having a separate processing step that runs after all individual libraries are generated.
 
 ## Post-processing discrepancies
 
@@ -400,7 +400,7 @@ The new, streamlined post-processor might not perform all the subtle modificatio
 
 ### Mitigation
 
-Before migrating each library, perform a `diff` between the output of the old and new systems. Any significant differences will be investigated and the post-processor will be adjusted as needed.
+After processing changes for a library, perform a `diff` over the entire google-cloud-go repo. Compare against a whole-repo diff after an OwlBot change.
 
 ## Tool versioning
 
