@@ -16,39 +16,30 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
+
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/bazel"
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/protoc"
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/request"
 )
 
-// The following constants define the directory layout that this generator expects
-// to be present in its container, as per the Librarian container contract.
-const (
-	// librarianDir is the mount point for inputs from the Librarian tool itself.
-	// It contains the primary request file (e.g., generate-request.json).
-	librarianDir = "/librarian"
-
-	// inputDir is the mount point for the `.librarian/generator-input` directory
-	// from the language repository. It is reserved for language-specific templates
-	// or post-processing scripts and is NOT used as a proto import path.
-	inputDir = "/input"
-
-	// outputDir is the mount point for an empty directory where this generator
-	// must write all its output. The Librarian tool is responsible for copying
-	// the contents of this directory to the language repository.
-	outputDir = "/output"
-
-	// sourceDir is the mount point for a complete checkout of the googleapis
-	// repository. It serves as the sole proto import path for protoc.
-	sourceDir = "/source"
+var (
+	// The following flags define the directory layout that this generator expects.
+	// They default to the paths specified in the Librarian container contract
+	// but can be overridden for local development.
+	librarianDir = flag.String("librarian", "/librarian", "Path to the librarian-tool input directory. Contains generate-request.json.")
+	inputDir     = flag.String("input", "/input", "Path to the .librarian/generator-input directory from the language repository.")
+	outputDir    = flag.String("output", "/output", "Path to the empty directory where the generator writes its output.")
+	sourceDir    = flag.String("source", "/source", "Path to a complete checkout of the googleapis repository.")
 )
 
 // main is the entrypoint for the generator container.
 func main() {
+	flag.Parse()
 	slog.Info("Go generator invoked", "args", os.Args)
 	if err := run(context.Background()); err != nil {
 		slog.Error("generator failed", "error", err)
@@ -58,12 +49,13 @@ func main() {
 }
 
 // run executes the appropriate command based on the container's invocation arguments.
-// The first argument to the container is always the command (e.g., "generate").
+// The first non-flag argument is the command (e.g., "generate").
 func run(ctx context.Context) error {
-	if len(os.Args) < 2 {
-		return fmt.Errorf("expected at least one argument for the command, got %d", len(os.Args)-1)
+	args := flag.Args()
+	if len(args) < 1 {
+		return fmt.Errorf("expected at least one argument for the command, got %d", len(args))
 	}
-	cmd := os.Args[1]
+	cmd := args[0]
 	switch cmd {
 	case "generate":
 		return generateCmd(ctx)
@@ -86,131 +78,34 @@ func generateCmd(ctx context.Context) error {
 
 	// The request file tells the generator which library and APIs to generate.
 	// It is prepared by the Librarian tool and mounted at /librarian.
-	reqPath := filepath.Join(librarianDir, "generate-request.json")
+	reqPath := filepath.Join(*librarianDir, "generate-request.json")
 	slog.Info("reading generate request", "path", reqPath)
 
-	reqFile, err := os.ReadFile(reqPath)
+	generateReq, err := request.Parse(reqPath)
 	if err != nil {
-		return fmt.Errorf("failed to read generate-request.json from %s: %w", reqPath, err)
-	}
-
-	var generateReq LibrarianRequest
-	if err := json.Unmarshal(reqFile, &generateReq); err != nil {
-		return fmt.Errorf("failed to unmarshal request file %s: %w", reqPath, err)
+		return err
 	}
 	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
 
 	for _, api := range generateReq.APIs {
-		serviceDir := filepath.Join(sourceDir, api.Path)
-		slog.Info("running protoc", "api_service_dir", serviceDir)
-		bazelConfig, err := NewBazelConfig(serviceDir)
+		apiServiceDir := filepath.Join(*sourceDir, api.Path)
+		slog.Info("processing api", "service_dir", apiServiceDir)
+		bazelConfig, err := bazel.Parse(apiServiceDir)
 		if err != nil {
-			return fmt.Errorf("failed to load unified config for %s: %w", serviceDir, err)
+			return fmt.Errorf("failed to parse BUILD.bazel for %s: %w", apiServiceDir, err)
 		}
-		slog.Info("unified config loaded", "conf", fmt.Sprintf("%+v", bazelConfig))
-		if err := protoc(ctx, &generateReq, &api, serviceDir, bazelConfig); err != nil {
+		slog.Info("bazel config loaded", "conf", fmt.Sprintf("%+v", bazelConfig))
+		args, err := protoc.Build(generateReq, &api, apiServiceDir, bazelConfig, *sourceDir, *outputDir)
+		if err != nil {
+			return fmt.Errorf("failed to build protoc command for api %q in library %q: %w", api.Path, generateReq.ID, err)
+		}
+		if err := protoc.Run(ctx, args, *outputDir); err != nil {
 			return fmt.Errorf("protoc failed for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
 	}
 
-	if err := postProcess(ctx, &generateReq, bazelConfig); err != nil {
-		return fmt.Errorf("post-processing failed for library %q: %w", generateReq.ID, err)
-	}
+	// TODO(codyoss): Implement post-processing.
 
 	slog.Info("generate command finished")
 	return nil
-}
-
-// protoc constructs and executes the protoc command for a given APIRequest.
-func protoc(ctx context.Context, lib *LibrarianRequest, api *APIRequest, serviceDir string, bazelConfig *BazelConfig) error {
-
-	// Gather all .proto files in the API's source directory.
-	entries, err := os.ReadDir(serviceDir)
-	if err != nil {
-		return fmt.Errorf("failed to read API source directory %s: %w", serviceDir, err)
-	}
-
-	var protoFiles []string
-	for _, entry := range entries {
-		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".proto" {
-			protoFiles = append(protoFiles, filepath.Join(serviceDir, entry.Name()))
-		}
-	}
-
-	if len(protoFiles) == 0 {
-		return fmt.Errorf("no .proto files found in %s", serviceDir)
-	}
-	slog.Info("found proto files", "files", protoFiles)
-
-	// Construct the protoc command arguments.
-	args := []string{
-		"--experimental_allow_proto3_optional",
-		// All generated files are written to the /output directory.
-		"--go_out=" + outputDir,
-		"--go-gapic_out=" + outputDir,
-		"--go-gapic_opt=go-gapic-package=" + bazelConfig.gapicImportPath,
-		// The -I flag specifies the import path for protoc. All protos
-		// and their dependencies must be findable from this path.
-		// The /source mount contains the complete googleapis repository.
-		"-I=" + sourceDir,
-	}
-	if api.ServiceConfig != "" {
-		args = append(args, "--go-gapic_opt=api-service-config="+filepath.Join(serviceDir, api.ServiceConfig))
-	}
-	if bazelConfig.serviceYaml != "" {
-		args = append(args, "--go_gapic_opt", fmt.Sprintf("api-service-config=%s", filepath.Join(bazelConfig.serviceDir, bazelConfig.serviceYaml)))
-	}
-	if bazelConfig.grpcServiceConfig != "" {
-		args = append(args, "--go_gapic_opt", fmt.Sprintf("grpc-service-config=%s", filepath.Join(bazelConfig.serviceDir, bazelConfig.grpcServiceConfig)))
-	}
-	if bazelConfig.transport != "" {
-		args = append(args, "--go_gapic_opt", fmt.Sprintf("transport=%s", bazelConfig.transport))
-	}
-	if bazelConfig.releaseLevel != "" {
-		args = append(args, "--go_gapic_opt", fmt.Sprintf("release-level=%s", bazelConfig.releaseLevel))
-	}
-	if bazelConfig.metadata {
-		args = append(args, "--go_gapic_opt", "metadata")
-	}
-	if bazelConfig.diregapic {
-		args = append(args, "--go_gapic_opt", "diregapic")
-	}
-	if bazelConfig.restNumericEnums {
-		args = append(args, "--go_gapic_opt", "rest-numeric-enums")
-	}
-
-	args = append(args, protoFiles...)
-
-	cmd := exec.CommandContext(ctx, "protoc", args...)
-	return runCommand(cmd)
-}
-
-// runCommand executes a command and logs its output.
-func runCommand(cmd *exec.Cmd) error {
-	cmd.Env = os.Environ()
-	cmd.Dir = outputDir // Run commands from the output directory.
-	slog.Info("running command", "command", strings.Join(cmd.Args, " "), "dir", cmd.Dir)
-
-	output, err := cmd.CombinedOutput()
-	if len(output) > 0 {
-		slog.Info("command output", "output", string(output))
-	}
-	if err != nil {
-		return fmt.Errorf("command failed with error: %w", err)
-	}
-	return nil
-}
-
-// LibrarianRequest corresponds to a librarian request (e.g., generate-request.json).
-// It is unmarshalled from the generate-request.json file.
-type LibrarianRequest struct {
-	ID      string       `json:"id"`
-	Version string       `json:"version,omitempty"`
-	APIs    []APIRequest `json:"apis"`
-}
-
-// APIRequest corresponds to a single API definition within a librarian request.
-type APIRequest struct {
-	Path          string `json:"path"`
-	ServiceConfig string `json:"service_config"`
 }

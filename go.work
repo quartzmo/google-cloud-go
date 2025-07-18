@@ -97,9 +97,7 @@ use (
 	./internal/gapicgen
 	./internal/generated/snippets
 	./internal/godocfx
-	./internal/postprocessor/librarian/bazel
 	./internal/postprocessor/librarian/generator
-	./internal/postprocessor/librarian/patron
 	./internal/protoveneer
 	./iot
 	./kms

@@ -21,16 +21,19 @@ import (
 	"html/template"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
+
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/bazel"
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/protoc"
+	"cloud.google.com/go/internal/postprocessor/librarian/generator/request"
 )
 
-//go:embed ../../_README.md.txt
+//go:embed _README.md.txt
 var readmeTmpl string
 
 // postProcess is the entrypoint for post-processing generated files.
 // It runs formatters and other tools to ensure code quality.
-func postProcess(ctx context.Context, req *LibrarianRequest, bazelConfig *BazelConfig) error {
+func postProcess(ctx context.Context, req *request.Request, bazelConfig *bazel.Config) error {
 	slog.Info("starting post-processing", "directory", outputDir)
 
 	if err := goimports(ctx); err != nil {
@@ -44,9 +47,9 @@ func postProcess(ctx context.Context, req *LibrarianRequest, bazelConfig *BazelC
 		// We'll use the import path of the first API to initialize the module.
 		// This assumes all APIs in the request belong to the same module.
 		// TODO: Ensure the root module path is used here.
-		importPath := bazelConfig.gapicImportPath
+		importPath := bazelConfig.GAPICImportPath
 
-		if err := generateReadmeAndChanges(outputDir, importPath, req.ID); err != nil {
+		if err := generateReadmeAndChanges(*outputDir, importPath, req.ID); err != nil {
 			return fmt.Errorf("failed to generate README/CHANGES.md: %w", err)
 		}
 
@@ -71,33 +74,33 @@ func postProcess(ctx context.Context, req *LibrarianRequest, bazelConfig *BazelC
 // goimports runs the goimports tool on a directory to format Go files and
 // manage imports.
 func goimports(ctx context.Context) error {
-	slog.Info("running goimports", "directory", outputDir)
+	slog.Info("running goimports", "directory", *outputDir)
 	// The `.` argument will make goimports process all go files in the directory
 	// and its subdirectories. The -w flag writes results back to source files.
-	cmd := exec.CommandContext(ctx, "goimports", "-w", ".")
-	return runCommand(cmd)
+	args := []string{"goimports", "-w", "."}
+	return protoc.Run(ctx, args, *outputDir)
 }
 
 // goModInit initializes a go.mod file in the given directory.
 func goModInit(ctx context.Context, importPath string) error {
-	slog.Info("running go mod init", "directory", outputDir, "importPath", importPath)
-	cmd := exec.CommandContext(ctx, "go", "mod", "init", importPath)
-	return runCommand(cmd)
+	slog.Info("running go mod init", "directory", *outputDir, "importPath", importPath)
+	args := []string{"go", "mod", "init", importPath}
+	return protoc.Run(ctx, args, *outputDir)
 }
 
 // goModTidy tidies the go.mod file, adding missing and removing unused dependencies.
 func goModTidy(ctx context.Context) error {
-	slog.Info("running go mod tidy", "directory", outputDir)
-	cmd := exec.CommandContext(ctx, "go", "mod", "tidy")
-	return runCommand(cmd)
+	slog.Info("running go mod tidy", "directory", *outputDir)
+	args := []string{"go", "mod", "tidy"}
+	return protoc.Run(ctx, args, *outputDir)
 }
 
 // staticcheck runs the staticcheck linter on the code in a directory.
 func staticcheck(ctx context.Context) error {
-	slog.Info("running staticcheck", "directory", outputDir)
+	slog.Info("running staticcheck", "directory", *outputDir)
 	// ./... checks all packages in the current directory and subdirectories.
-	cmd := exec.CommandContext(ctx, "staticcheck", "./...")
-	return runCommand(cmd)
+	args := []string{"staticcheck", "./..."}
+	return protoc.Run(ctx, args, *outputDir)
 }
 
 // generateReadmeAndChanges creates a README.md and CHANGES.md file for a new module.
