@@ -32,7 +32,7 @@ This document focuses on the delivery of a production-ready solution for the `ge
 
 1. **Invocation:** The Librarian tool invokes the Go `librariangen` container with the `generate` command.
 2. **Inputs:** Librarian provides all necessary inputs as mounted directories:
-   * `/input`: A directory for optional, user-provided configuration, templates or scripts. Contains the contents of the `.librarian/generator-input` folder from the google-cloud-go repository.
+   * `/input`: A directory for optional, user-provided configuration, templates or scripts. Contains the contents of the `.librarian/generator-input` folder from the google-cloud-go repository (no input from this folder has yet been specified).
    * `/librarian`: A configuration directory containing a `generate-request.json` file that specifies which APIs to generate for the target library.
    * `/output`: An empty directory where the container must write all generated code. The directory structure should match the desired structure in the final repository.
    * `/source`: A complete checkout of the `googleapis` repository.
@@ -92,7 +92,9 @@ libraries:
 
 The implementation consists of a Go application packaged into a Docker container. The use of `ENTRYPOINT` configures the container to act as an executable, allowing the Librarian tool to pass commands like `generate` and `configure` as arguments directly to it. The application's binary then dispatches to different logic based on the command-line argument provided by Librarian.
 
-The `librariangen` Docker container must use a MOSS-compliant [Google-approved base image](https://cloud.google.com/software-supply-chain-security/docs/base-images#google-provided_base_images), such as `marketplace.gcr.io/google/debian12:latest`. The Dockerfile is responsible for:
+The `librariangen` Docker container must use a MOSS-compliant [Google-approved base image](https://cloud.google.com/software-supply-chain-security/docs/base-images#google-provided_base_images) The preferred base image for Go is currently [`marketplace.gcr.io/google/debian12:latest`](http://marketplace.gcr.io/google/debian12:latest). (Debian is used for the official Go images at [https://hub.docker.com/\_/golang](https://hub.docker.com/_/golang), however these are not MOSS-compliant and Google-approved.)
+
+The Dockerfile is responsible for:
 
 * Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools. The versions must be copied from current existing configuration for `bazel-bot/OwlBot` and `google-cloud-go`, such as the `_protobuf_version` setting in the `googleapis` [WORKSPACE](https://github.com/googleapis/googleapis/blob/master/WORKSPACE) file.
 * Installing the latest compatible versions of the necessary Go protoc plugins: `google.golang.org/protobuf/cmd/protoc-gen-go` and `github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic`.
