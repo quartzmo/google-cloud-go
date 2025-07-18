@@ -1,141 +1,101 @@
 # `librariangen` Implementation Plan
 
-This document outlines the development tasks for creating the `librariangen` Go application, which will replace the legacy generation toolchain for `google-cloud-go`. The development process will follow an iterative, test-driven approach. Each feature implementation will be followed by unit testing, review, and refactoring.
+This document outlines the development tasks for creating the `librariangen` Go application. The development process will follow an iterative, test-driven approach.
 
 ## Phase 1: CLI Scaffolding and Core Logic
 
 This phase focuses on building the command-line interface and the foundational components for parsing inputs.
 
-*   [ ] **1. Project Setup**
-    *   [ ] Create the `librariangen` directory.
-    *   [ ] Create a `main.go` file.
-    *   [ ] Initialize the Go module: `go mod init github.com/googleapis/google-cloud-go/internal/postprocessor/librarian/generator`.
+*   [x] **1. Project Setup**
+*   [x] **2. Implement CLI Framework**
+*   [x] **3. Implement `generate-request.json` Parsing**
 
-*   [ ] **2. Implement CLI Framework**
+## Phase 2: `protoc` Generation
+
+This phase implements the core logic of the generator: reading Bazel configurations and executing `protoc`.
+
+*   [x] **4. Implement `BUILD.bazel` Parser**
+*   [x] **5. Implement `protoc` Command Builder and Executor**
+
+## Phase 3: Integration
+
+This phase integrates the `protoc` generation logic into the main CLI application.
+
+*   [x] **6. Integrate Components in `handleGenerate`**
+
+## Phase 4: Binary Integration Testing
+
+This phase focuses on testing the compiled Go binary directly to ensure all components work together correctly outside of a container.
+
+*   [x] **7. Create Binary Integration Test Script**
     *   **Coding:**
-        *   In `main.go`, implement the command-line argument parsing.
-        *   Use the `flag` package or a library like `cobra` to define subcommands: `generate`, `configure`, `build`.
-        *   Implement the required filepath flags for local development: `--source`, `--librarian`, `--output`, `--input`.
-        *   Create placeholder functions for each command (`handleGenerate`, `handleConfigure`, `handleBuild`). The initial implementation will focus on `handleGenerate`.
-        *   The `main` function should dispatch to the correct handler based on the subcommand and return a non-zero exit code on error.
+        *   Create a new script: `run-binary-integration-test.sh`.
+        *   The script should:
+            1.  Create a temporary directory structure to simulate the required inputs (e.g., `/tmp/test-env/source`, `/tmp/test-env/librarian`, `/tmp/test-env/output`).
+            2.  Copy the `generator/protoc/testdata/source` directory into the temporary source directory.
+            3.  Create a sample `generate-request.json` in the temporary librarian directory, pointing to an API to generate (e.g., `google/cloud/workflows/v1`).
+            4.  Compile the `librariangen` binary using `go build`.
+            5.  Execute the compiled binary with the `generate` command, using flags (`--source`, `--librarian`, `--output`) to point to the temporary directories.
+            6.  Verify that the command succeeds and that `.pb.go` files are created in the temporary output directory.
+            [ ] 7.  Check out the `https://github.com/googleapis/googleapis-gen` private repository to the temporary root directory.
+            [ ] 8.  Copy the temporary output directory contents into the `googleapis-gen/tree/master/google/cloud/workflows/v1` directory.
+            [ ] 9.  Run `git diff` and raise an error with the output if non-empty. This means that the output of `librarian` gen does not match the output of the legacy Bazel build.
+            10. Clean up the temporary directories.
     *   **Testing:**
-        *   Create `main_test.go`.
-        *   Write unit tests to verify that the correct handler is called for each subcommand.
-        *   Write unit tests to ensure flags are parsed correctly and default values are set.
+        *   Run the script locally to confirm it passes.
 
-*   [ ] **3. Implement `generate-request.json` Parsing**
-    *   **Coding:**
-        *   Create a new package `request` (`librariangen/request`).
-        *   In `request/request.go`, define the Go structs that map to the structure of `/librarian/generate-request.json`, including the `source_roots`, `preserve_regex`, and `remove_regex` fields.
-        *   Create a function `Parse(path string) (*Request, error)` that reads the file and unmarshals the JSON into the structs.
-        *   Integrate this parsing logic into the `handleGenerate` function.
-    *   **Testing:**
-        *   Create `request/request_test.go`.
-        *   Add a `testdata` directory with a sample `generate-request.json` that includes all new fields.
-        *   Write unit tests to confirm that the JSON is parsed correctly.
-        *   Test error cases: file not found, malformed JSON.
-
-## Phase 2: `protoc`-based Generation
-
-This phase implements the primary logic of the generator: reading Bazel configurations and executing `protoc` directly.
-
-*   [ ] **4. Implement `BUILD.bazel` Parser**
-    *   **Coding:**
-        *   Create a new package `bazel` (`librariangen/bazel`).
-        *   In `bazel/parser.go`, implement a function `Parse(path string) (*Config, error)`.
-        *   This parser will not be a full Starlark interpreter. It should be a robust line-by-line or regex-based parser focused *only* on extracting key-value pairs from the `go_gapic_library` and `go_proto_library` rules.
-        *   It needs to find `importpath`, `grpc_service_config`, `service_yaml`, `transport`, `release_level`, etc.
-        *   The function should be able to find and read the correct `BUILD.bazel` file based on an API path (e.g., `google/cloud/workflows/v1`).
-    *   **Testing:**
-        *   Create `bazel/parser_test.go`.
-        *   Add a `testdata` directory with several example `BUILD.bazel` files covering different cases (e.g., `go_gapic_library` vs. `go_grpc_library`, different transports, etc.).
-        *   Write comprehensive unit tests to ensure all required options are extracted correctly.
-        *   Test for edge cases like missing rules or malformed files.
-
-*   [ ] **5. Implement `protoc` Command Builder and Executor**
-    *   **Coding:**
-        *   Create a new package `protoc` (`librariangen/protoc`).
-        *   In `protoc/command.go`, create a builder that takes the parsed `request.Request` and `bazel.Config` as input and constructs the full `protoc` command as a `[]string`.
-        *   Implement a function `Run(cmd []string, outputDir string) error` that uses `os/exec` to run the command, capturing output for debugging.
-    *   **Integration Testing:**
-        *   Create an integration test file `protoc/command_integration_test.go`.
-        *   The test should set up a temporary directory structure, call the builder and runner, and verify that the expected `.go` files are generated in the correct subdirectories of `/output`.
-
-## Phase 3: Post-processing
+## Phase 5: Post-processing
 
 This phase implements the steps that run after generation to make the code a complete, release-ready Go module.
 
-*   [ ] **6. Implement Post-processing Steps**
+*   [ ] **8. Implement Post-processing Steps**
     *   **Coding:**
         *   Create a new package `postprocessor` (`librariangen/postprocessor`).
         *   Create a main function `Process(outputDir string, version string, modulePath string) error`.
-        *   For each task below, create a dedicated, well-documented function in the `postprocessor` package. Each function will use `os/exec` to run the corresponding command-line tool within the appropriate subdirectory of `outputDir`.
+        *   Implement the following post-processing steps:
         *   [ ] Run `goimports -w .`
         *   [ ] Run `go mod init <modulePath>`
-        *   [ ] Run `go mod tidy` (using `-mod=vendor` if necessary for hermeticity).
-        *   [ ] Generate `version.go` file (using a simple Go template).
+        *   [ ] Run `go mod tidy`
+        *   [ ] Generate `version.go` file.
         *   [ ] Run `staticcheck ./...`
-        *   [ ] Implement snippet metadata updates (e.g., updating the `$VERSION` placeholder in `snippet_metadata.*.json` files).
+        *   [ ] Implement snippet metadata updates.
     *   **Integration Testing:**
-        *   Create `postprocessor/postprocessor_integration_test.go`.
-        *   The test should set up a temporary directory with dummy `.go` files and a `snippet_metadata.json` file, run the `Process` function, and verify that all files are created and modified correctly.
+        *   Create `postprocessor/postprocessor_integration_test.go` to test the `Process` function.
 
-## Phase 4: Finalization and Documentation
+## Phase 6: Containerization and E2E Testing
 
-This phase brings all the components together, creates the final Docker image, and adds documentation.
+This phase focuses on packaging the application in Docker and performing high-level, end-to-end validation.
 
-*   [ ] **7. Integrate Components in `handleGenerate`**
-    *   **Coding:**
-        *   Flesh out the `handleGenerate` function in `main.go` to contain the full, end-to-end logic for the `protoc`-based approach.
-        *   Ensure robust error handling at each step.
-    *   **Review and Refactor:**
-        *   Perform a full code review of the application.
-        *   Refactor any duplicated logic and improve comments.
-
-*   [ ] **8. Create Dockerfile**
+*   [ ] **9. Create Dockerfile**
     *   **Coding:**
         *   Create the `generator/Dockerfile` as specified in the design document.
-        *   Use a multi-stage build to create a minimal final image containing the compiled binary and all required tools (`protoc`, `go`, `goimports`, `staticcheck`, etc.).
-        *   Ensure the container build process is hermetic (has no network access). This may involve vendoring Go modules.
+        *   Use a multi-stage build to create a minimal final image.
+        *   Ensure the container build process is hermetic.
         *   Ensure all tool versions are pinned.
         *   Set the `ENTRYPOINT` to `/librariangen`.
 
-*   [ ] **9. Write Documentation**
-    *   **Coding:**
-        *   Create a `generator/README.md`.
-        *   Document the purpose of the `librariangen`, how to build it, how to run it locally, and how to run tests.
-        *   Add a section detailing known limitations, such as the handling of global files.
-
-## Phase 5: Testing and Validation
-
-This phase focuses on the high-level testing required to validate the entire solution.
-
 *   [ ] **10. Create Test and Deployment Scripts**
     *   [ ] Create a `test.sh` smoke test script to perform basic validation of the final Docker image.
-    *   [ ] Create a `run-container-tests.sh` script to execute the full, containerized workflow for a suite of test libraries.
-    *   [ ] Document the process for publishing the container to the `us-central1-docker.pkg.dev` repository, including any IAM requirements.
+    *   [ ] Create a `run-container-tests.sh` script to execute the full, containerized workflow.
+    *   [ ] Document the process for publishing the container.
 
 *   [ ] **11. Manual Integration Testing**
-    *   [ ] Execute the manual testing plan as laid out in `design.md`:
-        1.  Onboard a single canary library.
-        2.  Onboard the ~90% of straightforward libraries.
-        3.  Onboard the 8 "difficult" libraries.
-        4.  Onboard all remaining libraries.
-    *   For each step, confirm that the output produces **no diff** against the code generated by the legacy system. Document all findings.
+    *   [ ] Execute the manual testing plan as laid out in `design.md` to confirm that the output of the core generation matches the legacy system.
 
-## Phase 6: Contingency and Future Work
+## Phase 7: Contingency and Future Work
 
 This phase is for the Bazel fallback strategy and documenting future work.
 
 *   [ ] **12. Implement Bazel Fallback Strategy**
-    *   **Description:** As a mitigation for APIs with complex or unusual `BUILD.bazel` files that the parser cannot handle, implement a secondary generation strategy that invokes Bazel directly.
+    *   **Description:** Implement a secondary generation strategy that invokes Bazel directly as a fallback for complex APIs.
     *   **Coding:**
-        *   [ ] Add a flag or configuration to `librariangen` to trigger the Bazel-based path.
-        *   [ ] Implement logic to construct and execute a `bazel build` command for the target API.
-        *   [ ] Implement logic to find the generated artifacts in the `bazel-bin` directory and copy them to the correct location within the `/output` directory.
+        *   [ ] Add a flag or configuration to trigger the Bazel-based path.
+        *   [ ] Implement logic to construct and execute a `bazel build` command.
+        *   [ ] Implement logic to find and copy the generated artifacts.
     *   **Testing:**
-        *   Create integration tests specifically for the Bazel-based generation path, verifying it produces the correct output.
+        *   Create integration tests specifically for the Bazel-based generation path.
 
 *   [ ] **13. Document Unresolved Issues**
-    *   [ ] Investigate and document a proposed solution for structured error reporting from the container.
-    *   [ ] Add placeholder implementations for the `configure` and `build` commands with clear "Not Implemented" errors. Create tracking issues for their future implementation.
+    *   [ ] In the `README.md`, document known limitations (e.g., handling of global files).
+    *   [ ] Investigate and document a proposed solution for structured error reporting.
+    *   [ ] Add placeholder implementations for the `configure` and `build` commands.
