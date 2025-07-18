@@ -324,7 +324,14 @@ A multi-faceted testing strategy is required to ensure a safe and successful mig
    * The `generate` command completes successfully.
    * The subsequent `build` command, running against the newly generated code, passes all its tests (`go build` and `go test`).
    * The output produces **no diff** against the current code.
-4. **Unit testing:** All new Go code written for the generator and post-processor will be accompanied by a comprehensive suite of unit tests.
+4. **Binary integration testing:** A script (`run-binary-integration-test.sh`) will provide end-to-end testing for the compiled `librariangen` binary, outside of a container. This allows for rapid, focused testing of the core generation logic. The script will:
+   * Create a temporary, isolated environment that mimics the directory structure the binary expects (`source`, `librarian`, `output`).
+   * Populate the temporary `source` directory with a complete and realistic set of test fixtures, including all necessary `.proto`, `BUILD.bazel`, and service `.yaml` files for a complex client like `workflows`.
+   * Create a `generate-request.json` file instructing the binary to generate the test client.
+   * Compile the `librariangen` binary from the latest source.
+   * Execute the binary, pointing it to the temporary directories.
+   * Verify that the binary exits successfully and that the expected Go files are generated in the `output` directory.
+5. **Unit testing:** All new Go code written for the generator and post-processor will be accompanied by a comprehensive suite of unit tests.
 
 # Alternatives considered
 
