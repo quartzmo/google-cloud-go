@@ -70,7 +70,9 @@ func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelCo
 	if bazelConfig.Diregapic {
 		gapicOpts = append(gapicOpts, "diregapic")
 	}
-	gapicOpts = append(gapicOpts, fmt.Sprintf("rest-numeric-enums=%t", bazelConfig.RESTNumericEnums))
+	if bazelConfig.RESTNumericEnums {
+		gapicOpts = append(gapicOpts, "rest-numeric-enums=true")
+	}
 
 	args := []string{
 		"protoc",

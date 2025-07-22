@@ -1,0 +1,159 @@
+--- Tool Versions ---
+Go: go version go1.24.4 darwin/arm64
+protoc: libprotoc 30.2
+protoc-gen-go: protoc-gen-go v1.36.6
+go: module github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic: not a known dependency
+protoc-gen-go_gapic: 
+---------------------
+2025/07/22 15:35:38 INFO Go generator invoked args="[./librariangen --source=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source --librarian=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/librarian --output=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output generate]"
+2025/07/22 15:35:38 INFO generate command started
+2025/07/22 15:35:38 INFO reading generate request path=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/librarian/generate-request.json
+2025/07/22 15:35:38 INFO successfully unmarshalled request library_id=google-cloud-workflows
+2025/07/22 15:35:38 INFO processing api service_dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1
+2025/07/22 15:35:38 INFO bazel config loaded conf="&{ProtoImportPath:cloud.google.com/go/workflows/apiv1/workflowspb GRPCServiceConfig:workflows_grpc_service_config.json GAPICImportPath:cloud.google.com/go/workflows/apiv1;workflows Metadata:true ReleaseLevel:ga RESTNumericEnums:true ServiceYAML:workflows_v1.yaml Transport:grpc+rest Diregapic:false}"
+2025/07/22 15:35:38 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/apiv1;workflows --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1/workflows_v1.yaml --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1/workflows_v1.yaml --go_gapic_opt=grpc-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1/workflows_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=ga --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums=true -I=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source /var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1/workflows.proto" dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output
+2025/07/22 15:35:39 INFO command output output="/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1/workflows.proto:24:1: warning: Import google/protobuf/empty.proto is unused.\n"
+2025/07/22 15:35:39 INFO processing api service_dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta
+2025/07/22 15:35:39 INFO bazel config loaded conf="&{ProtoImportPath:cloud.google.com/go/workflows/apiv1beta/workflowspb GRPCServiceConfig:workflows_grpc_service_config.json GAPICImportPath:cloud.google.com/go/workflows/apiv1beta;workflows Metadata:true ReleaseLevel:beta RESTNumericEnums:true ServiceYAML:workflows_v1beta.yaml Transport:grpc+rest Diregapic:false}"
+2025/07/22 15:35:39 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/apiv1beta;workflows --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta/workflows_v1beta.yaml --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta/workflows_v1beta.yaml --go_gapic_opt=grpc-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta/workflows_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums=true -I=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source /var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta/workflows.proto" dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output
+2025/07/22 15:35:39 INFO command output output="/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/v1beta/workflows.proto:24:1: warning: Import google/protobuf/empty.proto is unused.\n"
+2025/07/22 15:35:39 INFO processing api service_dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1
+2025/07/22 15:35:39 INFO bazel config loaded conf="&{ProtoImportPath:cloud.google.com/go/workflows/executions/apiv1/executionspb GRPCServiceConfig:executions_grpc_service_config.json GAPICImportPath:cloud.google.com/go/workflows/executions/apiv1;executions Metadata:true ReleaseLevel:ga RESTNumericEnums:false ServiceYAML:workflowexecutions_v1.yaml Transport:grpc Diregapic:false}"
+2025/07/22 15:35:39 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/executions/apiv1;executions --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1/workflowexecutions_v1.yaml --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1/workflowexecutions_v1.yaml --go_gapic_opt=grpc-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1/executions_grpc_service_config.json --go_gapic_opt=transport=grpc --go_gapic_opt=release-level=ga --go_gapic_opt=metadata -I=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source /var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1/executions.proto" dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output
+2025/07/22 15:35:39 INFO processing api service_dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1beta
+2025/07/22 15:35:39 INFO bazel config loaded conf="&{ProtoImportPath:cloud.google.com/go/workflows/executions/apiv1beta/executionspb GRPCServiceConfig:executions_grpc_service_config.json GAPICImportPath:cloud.google.com/go/workflows/executions/apiv1beta;executions Metadata:true ReleaseLevel:beta RESTNumericEnums:false ServiceYAML:workflowexecutions_v1beta.yaml Transport:grpc+rest Diregapic:false}"
+2025/07/22 15:35:39 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_out=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/executions/apiv1beta;executions --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1beta/workflowexecutions_v1beta.yaml --go_gapic_opt=api-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1beta/workflowexecutions_v1beta.yaml --go_gapic_opt=grpc-service-config=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1beta/executions_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata -I=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source /var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/source/google/cloud/workflows/executions/v1beta/executions.proto" dir=/var/folders/zk/_5rh6nq91db_fkzrcrh5v0w400xrml/T/tmp.oJA4eNg9C8/output
+2025/07/22 15:35:39 INFO generate command finished
+2025/07/22 15:35:39 INFO Go generator finished successfully
+--- Git Reset Summary ---
+HEAD is now at 2e8a3aa339df feat: ServiceController V2 APIs are out of private preview
+--- Git Status Summary ---
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   google/cloud/workflows/executions/v1/cloud.google.com/go/workflows/executions/apiv1/executionspb/executions.pb.go
+	modified:   google/cloud/workflows/executions/v1beta/cloud.google.com/go/workflows/executions/apiv1beta/executionspb/executions.pb.go
+	deleted:    google/cloud/workflows/executions/v1beta/cloud.google.com/go/workflows/executions/apiv1beta/executionspb/executions_grpc.pb.go
+	new file:   google/cloud/workflows/executions/v1beta/cloud.google.com/go/workflows/executions/apiv1beta/gapic_metadata.json
+	modified:   google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go
+	modified:   google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflowspb/workflows.pb.go
+	modified:   google/cloud/workflows/v1beta/cloud.google.com/go/workflows/apiv1beta/workflows_client.go
+	modified:   google/cloud/workflows/v1beta/cloud.google.com/go/workflows/apiv1beta/workflowspb/workflows.pb.go
+	deleted:    google/cloud/workflows/v1beta/cloud.google.com/go/workflows/apiv1beta/workflowspb/workflows_grpc.pb.go
+
+
+It took 7.24 seconds to enumerate untracked files.
+See 'git help status' for information on how to improve this.
+
+
+--- Diff for first modified file: google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go ---
+diff --git a/google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go b/google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go
+index 46fea17070b9..10566b290eda 100755
+--- a/google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go
++++ b/google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go
+@@ -779,7 +779,6 @@ func (c *restClient) ListWorkflows(ctx context.Context, req *workflowspb.ListWor
+ 		baseUrl.Path += fmt.Sprintf("/v1/%v/workflows", req.GetParent())
+ 
+ 		params := url.Values{}
+-		params.Add("$alt", "json;enum-encoding=int")
+ 		if req.GetFilter() != "" {
+ 			params.Add("filter", fmt.Sprintf("%v", req.GetFilter()))
+ 		}
+@@ -850,7 +849,6 @@ func (c *restClient) GetWorkflow(ctx context.Context, req *workflowspb.GetWorkfl
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetName())
+ 
+ 	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+ 	if req.GetRevisionId() != "" {
+ 		params.Add("revisionId", fmt.Sprintf("%v", req.GetRevisionId()))
+ 	}
+@@ -912,7 +910,6 @@ func (c *restClient) CreateWorkflow(ctx context.Context, req *workflowspb.Create
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v/workflows", req.GetParent())
+ 
+ 	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+ 	params.Add("workflowId", fmt.Sprintf("%v", req.GetWorkflowId()))
+ 
+ 	baseUrl.RawQuery = params.Encode()
+@@ -967,11 +964,6 @@ func (c *restClient) DeleteWorkflow(ctx context.Context, req *workflowspb.Delete
+ 	}
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetName())
+ 
+-	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+-
+-	baseUrl.RawQuery = params.Encode()
+-
+ 	// Build HTTP headers from client and context metadata.
+ 	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName()))}
+ 
+@@ -1032,7 +1024,6 @@ func (c *restClient) UpdateWorkflow(ctx context.Context, req *workflowspb.Update
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetWorkflow().GetName())
+ 
+ 	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+ 	if req.GetUpdateMask() != nil {
+ 		field, err := protojson.Marshal(req.GetUpdateMask())
+ 		if err != nil {
+@@ -1105,7 +1096,6 @@ func (c *restClient) ListWorkflowRevisions(ctx context.Context, req *workflowspb
+ 		baseUrl.Path += fmt.Sprintf("/v1/%v:listRevisions", req.GetName())
+ 
+ 		params := url.Values{}
+-		params.Add("$alt", "json;enum-encoding=int")
+ 		if req.GetPageSize() != 0 {
+ 			params.Add("pageSize", fmt.Sprintf("%v", req.GetPageSize()))
+ 		}
+@@ -1169,11 +1159,6 @@ func (c *restClient) GetLocation(ctx context.Context, req *locationpb.GetLocatio
+ 	}
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetName())
+ 
+-	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+-
+-	baseUrl.RawQuery = params.Encode()
+-
+ 	// Build HTTP headers from client and context metadata.
+ 	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName()))}
+ 
+@@ -1233,7 +1218,6 @@ func (c *restClient) ListLocations(ctx context.Context, req *locationpb.ListLoca
+ 		baseUrl.Path += fmt.Sprintf("/v1/%v/locations", req.GetName())
+ 
+ 		params := url.Values{}
+-		params.Add("$alt", "json;enum-encoding=int")
+ 		if req.GetFilter() != "" {
+ 			params.Add("filter", fmt.Sprintf("%v", req.GetFilter()))
+ 		}
+@@ -1300,11 +1284,6 @@ func (c *restClient) DeleteOperation(ctx context.Context, req *longrunningpb.Del
+ 	}
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetName())
+ 
+-	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+-
+-	baseUrl.RawQuery = params.Encode()
+-
+ 	// Build HTTP headers from client and context metadata.
+ 	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName()))}
+ 
+@@ -1335,11 +1314,6 @@ func (c *restClient) GetOperation(ctx context.Context, req *longrunningpb.GetOpe
+ 	}
+ 	baseUrl.Path += fmt.Sprintf("/v1/%v", req.GetName())
+ 
+-	params := url.Values{}
+-	params.Add("$alt", "json;enum-encoding=int")
+-
+-	baseUrl.RawQuery = params.Encode()
+-
+ 	// Build HTTP headers from client and context metadata.
+ 	hds := []string{"x-goog-request-params", fmt.Sprintf("%s=%v", "name", url.QueryEscape(req.GetName()))}
+ 
+@@ -1399,7 +1373,6 @@ func (c *restClient) ListOperations(ctx context.Context, req *longrunningpb.List
+ 		baseUrl.Path += fmt.Sprintf("/v1/%v/operations", req.GetName())
+ 
+ 		params := url.Values{}
+-		params.Add("$alt", "json;enum-encoding=int")
+ 		if req.GetFilter() != "" {
+ 			params.Add("filter", fmt.Sprintf("%v", req.GetFilter()))
+ 		}

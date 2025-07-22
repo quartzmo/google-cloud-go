@@ -50,7 +50,7 @@ func TestBuild(t *testing.T) {
 		ServiceYAML:       "workflows_v1.yaml",
 		ReleaseLevel:      "ga",
 		Metadata:          true,
-		RESTNumericEnums:  false,
+		RESTNumericEnums:  true,
 	}
 
 	got, err := Build(req, api, apiServiceDir, bazelConfig, sourceDir, "/output")
@@ -69,7 +69,7 @@ func TestBuild(t *testing.T) {
 		"--go_gapic_opt=transport=grpc",
 		"--go_gapic_opt=release-level=ga",
 		"--go_gapic_opt=metadata",
-		"--go_gapic_opt=rest-numeric-enums=false",
+		"--go_gapic_opt=rest-numeric-enums=true",
 		"-I=" + sourceDir,
 		filepath.Join(apiServiceDir, "workflows.proto"),
 	}
