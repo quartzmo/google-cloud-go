@@ -69,7 +69,7 @@ func TestBuild(t *testing.T) {
 		"--go_gapic_opt=transport=grpc",
 		"--go_gapic_opt=release-level=ga",
 		"--go_gapic_opt=metadata",
-		"--go_gapic_opt=rest-numeric-enums=true",
+		"--go_gapic_opt=rest-numeric-enums",
 		"-I=" + sourceDir,
 		filepath.Join(apiServiceDir, "workflows.proto"),
 	}

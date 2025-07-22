@@ -71,7 +71,7 @@ func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelCo
 		gapicOpts = append(gapicOpts, "diregapic")
 	}
 	if bazelConfig.RESTNumericEnums {
-		gapicOpts = append(gapicOpts, "rest-numeric-enums=true")
+		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 
 	args := []string{

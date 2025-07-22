@@ -13,7 +13,6 @@ set -e # Exit immediately if a command exits with a non-zero status.
 # set -x # Print commands and their arguments as they are executed.
 
 LIBRARIANGEN_GO_VERSION=local
-
 LIBRARIANGEN_LOG=librariangen.log
 # Start with a clean log file.
 rm -f "$LIBRARIANGEN_LOG"
@@ -24,10 +23,7 @@ echo "--- Tool Versions ---"
 echo "Go: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go version)"
 echo "protoc: $(protoc --version 2>&1)"
 echo "protoc-gen-go: $(protoc-gen-go --version 2>&1)"
-# The protoc-gen-go_gapic command is a plugin. We ensure the correct version
-# is installed, then use `go list` to find its version.
-(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.53.1)
-echo "protoc-gen-go_gapic: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go list -m github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic)"
+echo "protoc-gen-go_gapic: v0.53.1"
 echo "---------------------"
 ) >> "$LIBRARIANGEN_LOG" 2>&1
 
@@ -44,8 +40,8 @@ if ! command -v "protoc-gen-go-grpc" &> /dev/null; then
   echo "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"
 fi
 if ! command -v "protoc-gen-go_gapic" &> /dev/null; then
-  echo "Error: protoc-gen-go_gapic not found in PATH. Please install it."
-  echo "  go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@latest"
+  echo "protoc-gen-go_gapic not found in PATH. Installing..."
+  (GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.53.1)
 fi
 
 # --- Setup ---
@@ -88,9 +84,6 @@ PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go env GOPATH)/bin:$HOM
 # https://github.com/googleapis/gapic-generator-go/blob/main/rules_go_gapic/go_gapic.bzl#L34
 # TODO: move this to librariangen
 GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} gofmt -w -l $OUTPUT_DIR > /dev/null
-
-
-
 
 # --- Verify ---
 
@@ -169,8 +162,7 @@ git status
 # --- Diff of First Modified File ---
 # Use `git diff --numstat` to find the first file with actual content changes,
 # ignoring the noise from permission-only differences.
-# first_modified_file=$(git -C "$GEN_DIR" diff --staged --numstat | awk '$1 != "0" || $2 != "0" {print $3}' | head -n 1)
-first_modified_file=google/cloud/workflows/v1/cloud.google.com/go/workflows/apiv1/workflows_client.go
+first_modified_file=$(git -C "$GEN_DIR" diff --staged --numstat | awk '$1 != "0" || $2 != "0" {print $3}' | head -n 1)
 
 if [ -n "$first_modified_file" ]; then
   echo ""
