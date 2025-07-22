@@ -51,19 +51,29 @@ TEST_DIR=$(mktemp -d)
 echo "Using temporary directory: $TEST_DIR"
 
 # Define the directories replicating the mounts in the Docker container.
-SOURCE_DIR="$TEST_DIR/source"
 LIBRARIAN_DIR="$TEST_DIR/librarian"
 OUTPUT_DIR="$TEST_DIR/output"
-mkdir -p "$SOURCE_DIR" "$LIBRARIAN_DIR" "$OUTPUT_DIR"
+mkdir -p "$LIBRARIAN_DIR" "$OUTPUT_DIR"
+
+# Use an external googleapis checkout if available, otherwise use testdata.
+if [ -d "$LIBRARIANGEN_GOOGLEAPIS_DIR" ]; then
+  echo "Using googleapis source from $LIBRARIANGEN_GOOGLEAPIS_DIR"
+  SOURCE_DIR="$LIBRARIANGEN_GOOGLEAPIS_DIR"
+else
+  echo "LIBRARIANGEN_GOOGLEAPIS_DIR not set. Using testdata fixtures."
+  SOURCE_DIR="$TEST_DIR/source"
+  mkdir -p "$SOURCE_DIR"
+  # Copy the testdata protos into the temporary source directory.
+  echo "Copying test fixtures..."
+  cp -r "testdata/source/google" "$SOURCE_DIR/google"
+fi
 
 # The compiled binary will be placed in the current directory.
 BINARY_PATH="./librariangen"
 
 # --- Prepare Inputs ---
 
-# 1. Copy the testdata protos into the temporary source directory.
-echo "Copying test fixtures..."
-cp -r "testdata/source/google" "$SOURCE_DIR/google"
+# 1. Copy the generate-request.json into the librarian directory.
 cp "testdata/librarian/generate-request.json" "$LIBRARIAN_DIR/"
 
 # --- Execute ---
@@ -96,13 +106,13 @@ if [ -z "$(ls -A "$OUTPUT_DIR")" ]; then
 fi
 
 # Use a cached version of googleapis-gen if available.
-if [ ! -d "$GOOGLEAPIS_GEN_DIR" ]; then
-  echo "Error: GOOGLEAPIS_GEN_DIR is not set or not a directory."
+if [ ! -d "$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR" ]; then
+  echo "Error: LIBRARIANGEN_GOOGLEAPIS_GEN_DIR is not set or not a directory."
   echo "Please set it to the path of your local googleapis-gen clone."
   exit 1
 fi
-echo "Using cached googleapis-gen from $GOOGLEAPIS_GEN_DIR"
-GEN_DIR="$GOOGLEAPIS_GEN_DIR"
+echo "Using cached googleapis-gen from $LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
+GEN_DIR="$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
 
 # Define the API paths to verify.
 APIS=(
