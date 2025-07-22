@@ -12,15 +12,15 @@
 set -e # Exit immediately if a command exits with a non-zero status.
 # set -x # Print commands and their arguments as they are executed.
 
-LIBRARIANGEN_GO_VERSION=local
+LIBRARIANGEN_GOTOOLCHAIN=local
 LIBRARIANGEN_LOG=librariangen.log
-# Start with a clean log file.
+echo "Cleaning up from last time: rm -f $LIBRARIANGEN_LOG"
 rm -f "$LIBRARIANGEN_LOG"
 
 # --- Dependency Checks & Version Info ---
 (
 echo "--- Tool Versions ---"
-echo "Go: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go version)"
+echo "Go: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go version)"
 echo "protoc: $(protoc --version 2>&1)"
 echo "protoc-gen-go: $(protoc-gen-go --version 2>&1)"
 echo "protoc-gen-go_gapic: v0.53.1"
@@ -41,13 +41,22 @@ if ! command -v "protoc-gen-go-grpc" &> /dev/null; then
 fi
 if ! command -v "protoc-gen-go_gapic" &> /dev/null; then
   echo "protoc-gen-go_gapic not found in PATH. Installing..."
-  (GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.53.1)
+  (GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.53.1)
 fi
+
+
+echo "Cleaning up from last time..."
+rm -rf "$TEST_DIR"
+rm -f "$BINARY_PATH"
 
 # --- Setup ---
 
 # Create a temporary directory for the entire test environment.
-TEST_DIR=$(mktemp -d)
+TEST_DIR=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out
+echo "Cleaning up from last time: rm -rf $TEST_DIR"
+rm -rf "$TEST_DIR"
+echo "Cleaning up from last time: rm -rf $BINARY_PATH"
+rm -f "$BINARY_PATH"
 echo "Using temporary directory: $TEST_DIR"
 
 # Define the directories replicating the mounts in the Docker container.
@@ -70,6 +79,8 @@ fi
 
 # The compiled binary will be placed in the current directory.
 BINARY_PATH="./librariangen"
+echo "Cleaning up from last time: rm -f $BINARY_PATH"
+rm -f "$BINARY_PATH"
 
 # --- Prepare Inputs ---
 
@@ -80,11 +91,11 @@ cp "testdata/librarian/generate-request.json" "$LIBRARIAN_DIR/"
 
 # 3. Compile the librariangen binary.
 echo "Compiling librariangen..."
-GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go build -o "$BINARY_PATH" .
+GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go build -o "$BINARY_PATH" .
 
 # 4. Run the librariangen generate command.
 echo "Running librariangen..."
-PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go env GOPATH)/bin:$HOME/go/bin:$PATH ./librariangen \
+PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HOME/go/bin:$PATH ./librariangen \
   --source="$SOURCE_DIR" \
   --librarian="$LIBRARIAN_DIR" \
   --output="$OUTPUT_DIR" \
@@ -93,7 +104,7 @@ PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} go env GOPATH)/bin:$HOM
 # Run gofmt just like the Bazel rule:
 # https://github.com/googleapis/gapic-generator-go/blob/main/rules_go_gapic/go_gapic.bzl#L34
 # TODO: move this to librariangen
-GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GO_VERSION} gofmt -w -l $OUTPUT_DIR > /dev/null
+GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} gofmt -w -l $OUTPUT_DIR > /dev/null
 
 # --- Verify ---
 
@@ -192,11 +203,6 @@ echo ""
 echo -e "To reset your googleapis-gen repository:"
 echo "  cd $GEN_DIR"
 echo "  git reset --hard HEAD && git clean -fd"
-
-# --- Cleanup ---
-echo "Cleaning up..."
-rm -rf "$TEST_DIR"
-rm -f "$BINARY_PATH"
 
 echo "Binary integration test passed successfully."
 echo "Generated files are available for inspection in: $OUTPUT_DIR"
