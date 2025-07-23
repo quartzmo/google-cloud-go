@@ -49,6 +49,8 @@ type Config struct {
 	Transport string
 	// Not typically present.
 	Diregapic bool
+	// Set to true if a go_grpc_library rule is found in the BUILD.bazel file.
+	HasGoGRPC bool
 }
 
 // Parse reads a BUILD.bazel file from the given directory and extracts the
@@ -115,6 +117,7 @@ func Parse(dir string) (*Config, error) {
 	for _, rule := range f.Rules("go_grpc_library") {
 		if v := rule.AttrString("importpath"); v != "" {
 			c.ProtoImportPath = v
+			c.HasGoGRPC = true
 		}
 	}
 	return c, nil

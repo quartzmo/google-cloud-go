@@ -79,8 +79,12 @@ func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelCo
 		"--experimental_allow_proto3_optional",
 		// All generated files are written to the /output directory.
 		"--go_out=" + outputDir,
-		"--go_gapic_out=" + outputDir,
 	}
+	if bazelConfig.HasGoGRPC {
+		args = append(args, "--go-grpc_out="+outputDir)
+	}
+	args = append(args, "--go_gapic_out="+outputDir)
+
 	for _, opt := range gapicOpts {
 		args = append(args, "--go_gapic_opt="+opt)
 	}

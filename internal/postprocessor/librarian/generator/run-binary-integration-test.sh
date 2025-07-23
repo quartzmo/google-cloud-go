@@ -23,6 +23,7 @@ echo "--- Tool Versions ---"
 echo "Go: $(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go version)"
 echo "protoc: $(protoc --version 2>&1)"
 echo "protoc-gen-go: $(protoc-gen-go --version 2>&1)"
+echo "protoc-gen-go-grpc: $(protoc-gen-go-grpc --version 2>&1)"
 echo "protoc-gen-go_gapic: v0.53.1"
 echo "---------------------"
 ) >> "$LIBRARIANGEN_LOG" 2>&1
@@ -33,11 +34,11 @@ if ! command -v "protoc" &> /dev/null; then
 fi
 if ! command -v "protoc-gen-go" &> /dev/null; then
   echo "Error: protoc-gen-go not found in PATH. Please install it."
-  echo "  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
+  echo "  go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2"
 fi
 if ! command -v "protoc-gen-go-grpc" &> /dev/null; then
   echo "Error: protoc-gen-go-grpc not found in PATH. Please install it."
-  echo "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"
+  echo "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0"
 fi
 if ! command -v "protoc-gen-go_gapic" &> /dev/null; then
   echo "protoc-gen-go_gapic not found in PATH. Installing..."
@@ -127,17 +128,11 @@ GEN_DIR="$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
 
 # Define the API paths to verify.
 APIS=(
-  "workflows/apiv1"
-  "workflows/apiv1beta"
-  "workflows/executions/apiv1"
-  "workflows/executions/apiv1beta"
+  "chronicle/apiv1"
 )
 # These are the corresponding paths in the googleapis-gen repository.
 GEN_API_PATHS=(
-  "google/cloud/workflows/v1"
-  "google/cloud/workflows/v1beta"
-  "google/cloud/workflows/executions/v1"
-  "google/cloud/workflows/executions/v1beta"
+  "google/cloud/chronicle/v1"
 )
 
 # --- Verification using Git ---

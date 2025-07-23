@@ -51,6 +51,7 @@ func TestBuild(t *testing.T) {
 		ReleaseLevel:      "ga",
 		Metadata:          true,
 		RESTNumericEnums:  true,
+		HasGoGRPC:         true,
 	}
 
 	got, err := Build(req, api, apiServiceDir, bazelConfig, sourceDir, "/output")
@@ -62,10 +63,11 @@ func TestBuild(t *testing.T) {
 		"protoc",
 		"--experimental_allow_proto3_optional",
 		"--go_out=/output",
+		"--go-grpc_out=/output",
 		"--go_gapic_out=/output",
 		"--go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/apiv1;workflows",
 		"--go_gapic_opt=api-service-config=" + filepath.Join(apiServiceDir, "workflows_v1.yaml"),
-		"--go_gapic_opt=grpc-service-config=" + filepath.Join(apiServiceDir, "workflows_grpc_service_config.json"),
+		"--go_gapic_opt=grpc-service-config=" + filepath.join(apiServiceDir, "workflows_grpc_service_config.json"),
 		"--go_gapic_opt=transport=grpc",
 		"--go_gapic_opt=release-level=ga",
 		"--go_gapic_opt=metadata",
