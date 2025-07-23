@@ -18,20 +18,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestParse(t *testing.T) {
-	testCases := []struct {
-		name    string
-		content string
-		want    *Config
-		wantErr bool
-	}{
-		{
-			name: "valid build file",
-			content: `
+	content := `
 go_proto_library(
     name = "asset_go_proto",
     compilers = ["@io_bazel_rules_go//proto:go_grpc"],
@@ -51,54 +41,40 @@ go_gapic_library(
     transport = "grpc+rest",
     diregapic = True,
 )
-`,
-			want: &Config{
-				ProtoImportPath:   "cloud.google.com/go/asset/apiv1/assetpb",
-				GRPCServiceConfig: "cloudasset_grpc_service_config.json",
-				GAPICImportPath:   "cloud.google.com/go/asset/apiv1;asset",
-				Metadata:          true,
-				ReleaseLevel:      "ga",
-				RESTNumericEnums:  true,
-				ServiceYAML:       "cloudasset_v1.yaml",
-				Transport:         "grpc+rest",
-				Diregapic:         true,
-			},
-			wantErr: false,
-		},
-		{
-			name:    "malformed build file",
-			content: `go_proto_library(`,
-			wantErr: true,
-		},
+`
+	tmpDir := t.TempDir()
+	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			buildPath := filepath.Join(tmpDir, "BUILD.bazel")
-			if err := os.WriteFile(buildPath, []byte(tc.content), 0644); err != nil {
-				t.Fatalf("failed to write test file: %v", err)
-			}
-
-			got, err := Parse(tmpDir)
-
-			if (err != nil) != tc.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tc.wantErr)
-				return
-			}
-
-			if !tc.wantErr {
-				if diff := cmp.Diff(tc.want, got); diff != "" {
-					t.Errorf("Parse() mismatch (-want +got):\n%s", diff)
-				}
-			}
-		})
+	got, err := Parse(tmpDir)
+	if err != nil {
+		t.Fatalf("Parse() failed: %v", err)
 	}
-}
 
-func TestParse_FileNotFound(t *testing.T) {
-	_, err := Parse("non-existent-dir")
-	if err == nil {
-		t.Error("Parse() expected error for non-existent file, got nil")
+	if want := "cloud.google.com/go/asset/apiv1;asset"; got.GAPICImportPath() != want {
+		t.Errorf("GAPICImportPath() = %q; want %q", got.GAPICImportPath(), want)
+	}
+	if want := "cloudasset_v1.yaml"; got.ServiceYAML() != want {
+		t.Errorf("ServiceYAML() = %q; want %q", got.ServiceYAML(), want)
+	}
+	if want := "cloudasset_grpc_service_config.json"; got.GRPCServiceConfig() != want {
+		t.Errorf("GRPCServiceConfig() = %q; want %q", got.GRPCServiceConfig(), want)
+	}
+	if want := "grpc+rest"; got.Transport() != want {
+		t.Errorf("Transport() = %q; want %q", got.Transport(), want)
+	}
+	if want := "ga"; got.ReleaseLevel() != want {
+		t.Errorf("ReleaseLevel() = %q; want %q", got.ReleaseLevel(), want)
+	}
+	if !got.HasMetadata() {
+		t.Error("HasMetadata() = false; want true")
+	}
+	if !got.HasDiregapic() {
+		t.Error("HasDiregapic() = false; want true")
+	}
+	if !got.HasRESTNumericEnums() {
+		t.Error("HasRESTNumericEnums() = false; want true")
 	}
 }

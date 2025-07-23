@@ -23,12 +23,26 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cloud.google.com/go/internal/postprocessor/librarian/generator/bazel"
 	"cloud.google.com/go/internal/postprocessor/librarian/generator/request"
 )
 
+// ConfigProvider is an interface that describes the configuration needed
+// by the Build function. This allows the protoc package to be decoupled
+// from the source of the configuration (e.g., Bazel files, JSON, etc.).
+type ConfigProvider interface {
+	GAPICImportPath() string
+	ServiceYAML() string
+	GRPCServiceConfig() string
+	Transport() string
+	ReleaseLevel() string
+	HasMetadata() bool
+	HasDiregapic() bool
+	HasRESTNumericEnums() bool
+	HasGoGRPC() bool
+}
+
 // Build constructs the full protoc command arguments for a given API.
-func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelConfig *bazel.Config, sourceDir, outputDir string) ([]string, error) {
+func Build(lib *request.Request, api *request.API, apiServiceDir string, config ConfigProvider, sourceDir, outputDir string) ([]string, error) {
 	// Gather all .proto files in the API's source directory.
 	entries, err := os.ReadDir(apiServiceDir)
 	if err != nil {
@@ -48,29 +62,26 @@ func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelCo
 
 	// Construct the protoc command arguments.
 	var gapicOpts []string
-	gapicOpts = append(gapicOpts, "go-gapic-package="+bazelConfig.GAPICImportPath)
-	if api.ServiceConfig != "" {
-		gapicOpts = append(gapicOpts, "api-service-config="+filepath.Join(apiServiceDir, api.ServiceConfig))
+	gapicOpts = append(gapicOpts, "go-gapic-package="+config.GAPICImportPath())
+	if config.ServiceYAML() != "" {
+		gapicOpts = append(gapicOpts, fmt.Sprintf("api-service-config=%s", filepath.Join(apiServiceDir, config.ServiceYAML())))
 	}
-	if bazelConfig.ServiceYAML != "" {
-		gapicOpts = append(gapicOpts, fmt.Sprintf("api-service-config=%s", filepath.Join(apiServiceDir, bazelConfig.ServiceYAML)))
+	if config.GRPCServiceConfig() != "" {
+		gapicOpts = append(gapicOpts, fmt.Sprintf("grpc-service-config=%s", filepath.Join(apiServiceDir, config.GRPCServiceConfig())))
 	}
-	if bazelConfig.GRPCServiceConfig != "" {
-		gapicOpts = append(gapicOpts, fmt.Sprintf("grpc-service-config=%s", filepath.Join(apiServiceDir, bazelConfig.GRPCServiceConfig)))
+	if config.Transport() != "" {
+		gapicOpts = append(gapicOpts, fmt.Sprintf("transport=%s", config.Transport()))
 	}
-	if bazelConfig.Transport != "" {
-		gapicOpts = append(gapicOpts, fmt.Sprintf("transport=%s", bazelConfig.Transport))
+	if config.ReleaseLevel() != "" {
+		gapicOpts = append(gapicOpts, fmt.Sprintf("release-level=%s", config.ReleaseLevel()))
 	}
-	if bazelConfig.ReleaseLevel != "" {
-		gapicOpts = append(gapicOpts, fmt.Sprintf("release-level=%s", bazelConfig.ReleaseLevel))
-	}
-	if bazelConfig.Metadata {
+	if config.HasMetadata() {
 		gapicOpts = append(gapicOpts, "metadata")
 	}
-	if bazelConfig.Diregapic {
+	if config.HasDiregapic() {
 		gapicOpts = append(gapicOpts, "diregapic")
 	}
-	if bazelConfig.RESTNumericEnums {
+	if config.HasRESTNumericEnums() {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 
@@ -80,7 +91,7 @@ func Build(lib *request.Request, api *request.API, apiServiceDir string, bazelCo
 		// All generated files are written to the /output directory.
 		"--go_out=" + outputDir,
 	}
-	if bazelConfig.HasGoGRPC {
+	if config.HasGoGRPC() {
 		args = append(args, "--go-grpc_out="+outputDir)
 	}
 	args = append(args, "--go_gapic_out="+outputDir)

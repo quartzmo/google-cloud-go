@@ -29,29 +29,56 @@ type Config struct {
 	// The fields below are all from the API version BUILD.bazel file.
 	// E.g., googleapis/google/cloud/asset/v1/BUILD.bazel
 	// Note that not all fields are present in every rule usage.
-	// ProtoImportPath is importpath in the go_proto_library or go_grpc_library rule.
-	ProtoImportPath string
+	// protoImportPath is importpath in the go_proto_library or go_grpc_library rule.
+	protoImportPath string
 	// The remaining fields below are all from the go_gapic_library rule.
-	GRPCServiceConfig string
-	// GAPICImportPath is importpath in the go_gapic_library rule.
-	GAPICImportPath string
+	grpcServiceConfig string
+	// gapicImportPath is importpath in the go_gapic_library rule.
+	gapicImportPath string
 	// Not typically present.
-	Metadata bool
-	// ReleaseLevel is typically one of "beta", "" (same as beta) or "ga".
+	metadata bool
+	// releaseLevel is typically one of "beta", "" (same as beta) or "ga".
 	// If "ga", gapic-generator-go does not print a warning in the package docs.
-	ReleaseLevel string
-	// RESTNumericEnums is typically true.
-	RESTNumericEnums bool
-	// ServiceYAML is the YAML file in the API version directory in googleapis.
+	releaseLevel string
+	// restNumericEnums is typically true.
+	restNumericEnums bool
+	// serviceYAML is the YAML file in the API version directory in googleapis.
 	// E.g., googleapis/google/cloud/asset/v1/cloudasset_v1.yaml
-	ServiceYAML string
-	// Transport is typically one of "grpc", "rest" or "grpc+rest".
-	Transport string
+	serviceYAML string
+	// transport is typically one of "grpc", "rest" or "grpc+rest".
+	transport string
 	// Not typically present.
-	Diregapic bool
+	diregapic bool
 	// Set to true if a go_grpc_library rule is found in the BUILD.bazel file.
-	HasGoGRPC bool
+	hasGoGRPC bool
 }
+
+// GAPICImportPath returns the GAPIC import path.
+func (c *Config) GAPICImportPath() string { return c.gapicImportPath }
+
+// ServiceYAML returns the service YAML file name.
+func (c *Config) ServiceYAML() string { return c.serviceYAML }
+
+// GRPCServiceConfig returns the gRPC service config file name.
+func (c *Config) GRPCServiceConfig() string { return c.grpcServiceConfig }
+
+// Transport returns the transport type.
+func (c *Config) Transport() string { return c.transport }
+
+// ReleaseLevel returns the release level.
+func (c *Config) ReleaseLevel() string { return c.releaseLevel }
+
+// HasMetadata returns true if metadata should be generated.
+func (c *Config) HasMetadata() bool { return c.metadata }
+
+// HasDiregapic returns true if diregapic should be enabled.
+func (c *Config) HasDiregapic() bool { return c.diregapic }
+
+// HasRESTNumericEnums returns true if REST numeric enums should be enabled.
+func (c *Config) HasRESTNumericEnums() bool { return c.restNumericEnums }
+
+// HasGoGRPC returns true if a go_grpc_library rule was found.
+func (c *Config) HasGoGRPC() bool { return c.hasGoGRPC }
 
 // Parse reads a BUILD.bazel file from the given directory and extracts the
 // relevant configuration from the go_gapic_library and go_proto_library rules.
@@ -70,37 +97,37 @@ func Parse(dir string) (*Config, error) {
 	// GAPIC build target
 	for _, rule := range f.Rules("go_gapic_library") {
 		if v := rule.AttrString("grpc_service_config"); v != "" {
-			c.GRPCServiceConfig = v
+			c.grpcServiceConfig = v
 		}
 		if v := rule.AttrString("importpath"); v != "" {
-			c.GAPICImportPath = v
+			c.gapicImportPath = v
 		}
 		if v := rule.AttrLiteral("metadata"); v != "" {
 			if b, err := strconv.ParseBool(v); err == nil {
-				c.Metadata = b
+				c.metadata = b
 			} else {
 				slog.Warn("failed to parse metadata", "error", err, "input", v)
 			}
 		}
 		if v := rule.AttrString("release_level"); v != "" {
-			c.ReleaseLevel = v
+			c.releaseLevel = v
 		}
 		if v := rule.AttrLiteral("rest_numeric_enums"); v != "" {
 			if b, err := strconv.ParseBool(v); err == nil {
-				c.RESTNumericEnums = b
+				c.restNumericEnums = b
 			} else {
 				slog.Warn("failed to parse rest_numeric_enums", "error", err, "input", v)
 			}
 		}
 		if v := rule.AttrString("service_yaml"); v != "" {
-			c.ServiceYAML = v
+			c.serviceYAML = v
 		}
 		if v := rule.AttrString("transport"); v != "" {
-			c.Transport = v
+			c.transport = v
 		}
 		if v := rule.AttrLiteral("diregapic"); v != "" {
 			if b, err := strconv.ParseBool(v); err == nil {
-				c.Diregapic = b
+				c.diregapic = b
 			} else {
 				slog.Warn("failed to parse diregapic", "error", err, "input", v)
 			}
@@ -111,13 +138,13 @@ func Parse(dir string) (*Config, error) {
 	// both for now.
 	for _, rule := range f.Rules("go_proto_library") {
 		if v := rule.AttrString("importpath"); v != "" {
-			c.ProtoImportPath = v
+			c.protoImportPath = v
 		}
 	}
 	for _, rule := range f.Rules("go_grpc_library") {
 		if v := rule.AttrString("importpath"); v != "" {
-			c.ProtoImportPath = v
-			c.HasGoGRPC = true
+			c.protoImportPath = v
+			c.hasGoGRPC = true
 		}
 	}
 	return c, nil

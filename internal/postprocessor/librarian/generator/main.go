@@ -104,7 +104,7 @@ func generateCmd(ctx context.Context) error {
 		}
 	}
 
-	// TODO(codyoss): Implement post-processing.
+	// TODO(quartzmo): Implement post-processing.
 
 	slog.Info("generate command finished")
 	return nil

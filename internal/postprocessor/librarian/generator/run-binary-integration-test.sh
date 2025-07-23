@@ -65,18 +65,14 @@ LIBRARIAN_DIR="$TEST_DIR/librarian"
 OUTPUT_DIR="$TEST_DIR/output"
 mkdir -p "$LIBRARIAN_DIR" "$OUTPUT_DIR"
 
-# Use an external googleapis checkout if available, otherwise use testdata.
-if [ -d "$LIBRARIANGEN_GOOGLEAPIS_DIR" ]; then
-  echo "Using googleapis source from $LIBRARIANGEN_GOOGLEAPIS_DIR"
-  SOURCE_DIR="$LIBRARIANGEN_GOOGLEAPIS_DIR"
-else
-  echo "LIBRARIANGEN_GOOGLEAPIS_DIR not set. Using testdata fixtures."
-  SOURCE_DIR="$TEST_DIR/source"
-  mkdir -p "$SOURCE_DIR"
-  # Copy the testdata protos into the temporary source directory.
-  echo "Copying test fixtures..."
-  cp -r "testdata/source/google" "$SOURCE_DIR/google"
+# Use an external googleapis checkout.
+if [ ! -d "$LIBRARIANGEN_GOOGLEAPIS_DIR" ]; then
+  echo "Error: LIBRARIANGEN_GOOGLEAPIS_DIR is not set or not a directory."
+  echo "Please set it to the path of your local googleapis clone."
+  exit 1
 fi
+echo "Using googleapis source from $LIBRARIANGEN_GOOGLEAPIS_DIR"
+SOURCE_DIR="$LIBRARIANGEN_GOOGLEAPIS_DIR"
 
 # The compiled binary will be placed in the current directory.
 BINARY_PATH="./librariangen"

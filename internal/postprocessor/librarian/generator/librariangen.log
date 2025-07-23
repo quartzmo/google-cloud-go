@@ -2,17 +2,18 @@
 Go: go version go1.24.4 darwin/arm64
 protoc: libprotoc 25.7
 protoc-gen-go: protoc-gen-go v1.35.2
+protoc-gen-go-grpc: protoc-gen-go-grpc 1.3.0
 protoc-gen-go_gapic: v0.53.1
 ---------------------
-2025/07/23 16:32:01 INFO Go generator invoked args="[./librariangen --source=/Users/chrisdsmith/oss/googleapis --librarian=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/librarian --output=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output generate]"
-2025/07/23 16:32:01 INFO generate command started
-2025/07/23 16:32:01 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/librarian/generate-request.json
-2025/07/23 16:32:01 INFO successfully unmarshalled request library_id=google-cloud-chronicle
-2025/07/23 16:32:01 INFO processing api service_dir=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1
-2025/07/23 16:32:01 INFO bazel config loaded conf="&{ProtoImportPath:cloud.google.com/go/chronicle/apiv1/chroniclepb GRPCServiceConfig:chronicle_v1_grpc_service_config.json GAPICImportPath:cloud.google.com/go/chronicle/apiv1;chronicle Metadata:true ReleaseLevel:beta RESTNumericEnums:true ServiceYAML:chronicle_v1.yaml Transport:grpc+rest Diregapic:false HasGoGRPC:true}"
-2025/07/23 16:32:01 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go-grpc_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go_gapic_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/chronicle/apiv1;chronicle --go_gapic_opt=api-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1.yaml --go_gapic_opt=api-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1.yaml --go_gapic_opt=grpc-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums -I=/Users/chrisdsmith/oss/googleapis /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/data_access_control.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/entity.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/instance.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/reference_list.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/rule.proto" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output
-2025/07/23 16:32:02 INFO generate command finished
-2025/07/23 16:32:02 INFO Go generator finished successfully
+2025/07/23 17:52:34 INFO Go generator invoked args="[./librariangen --source=/Users/chrisdsmith/oss/googleapis --librarian=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/librarian --output=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output generate]"
+2025/07/23 17:52:34 INFO generate command started
+2025/07/23 17:52:34 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/librarian/generate-request.json
+2025/07/23 17:52:34 INFO successfully unmarshalled request library_id=google-cloud-chronicle
+2025/07/23 17:52:34 INFO processing api service_dir=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1
+2025/07/23 17:52:34 INFO bazel config loaded conf="&{protoImportPath:cloud.google.com/go/chronicle/apiv1/chroniclepb grpcServiceConfig:chronicle_v1_grpc_service_config.json gapicImportPath:cloud.google.com/go/chronicle/apiv1;chronicle metadata:true releaseLevel:beta restNumericEnums:true serviceYAML:chronicle_v1.yaml transport:grpc+rest diregapic:false hasGoGRPC:true}"
+2025/07/23 17:52:34 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go-grpc_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go_gapic_out=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/chronicle/apiv1;chronicle --go_gapic_opt=api-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1.yaml --go_gapic_opt=grpc-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums -I=/Users/chrisdsmith/oss/googleapis /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/data_access_control.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/entity.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/instance.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/reference_list.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/rule.proto" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/generator/build_out/output
+2025/07/23 17:52:34 INFO generate command finished
+2025/07/23 17:52:34 INFO Go generator finished successfully
 --- Git Reset Summary ---
 HEAD is now at 2e8a3aa339df feat: ServiceController V2 APIs are out of private preview
 --- Git Status Summary ---
@@ -28,7 +29,7 @@ Changes to be committed:
 	modified:   google/cloud/chronicle/v1/cloud.google.com/go/chronicle/apiv1/chroniclepb/rule_grpc.pb.go
 
 
-It took 6.61 seconds to enumerate untracked files.
+It took 6.15 seconds to enumerate untracked files.
 See 'git help status' for information on how to improve this.
 
 

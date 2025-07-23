@@ -23,10 +23,32 @@ import (
 	"testing"
 	"time"
 
-	"cloud.google.com/go/internal/postprocessor/librarian/generator/bazel"
 	"cloud.google.com/go/internal/postprocessor/librarian/generator/request"
 	"github.com/google/go-cmp/cmp"
 )
+
+// mockConfigProvider is a mock implementation of the ConfigProvider interface for testing.
+type mockConfigProvider struct {
+	gapicImportPath   string
+	serviceYAML       string
+	grpcServiceConfig string
+	transport         string
+	releaseLevel      string
+	metadata          bool
+	diregapic         bool
+	restNumericEnums  bool
+	hasGoGRPC         bool
+}
+
+func (m *mockConfigProvider) GAPICImportPath() string     { return m.gapicImportPath }
+func (m *mockConfigProvider) ServiceYAML() string         { return m.serviceYAML }
+func (m *mockConfigProvider) GRPCServiceConfig() string   { return m.grpcServiceConfig }
+func (m *mockConfigProvider) Transport() string           { return m.transport }
+func (m *mockConfigProvider) ReleaseLevel() string        { return m.releaseLevel }
+func (m *mockConfigProvider) HasMetadata() bool           { return m.metadata }
+func (m *mockConfigProvider) HasDiregapic() bool          { return m.diregapic }
+func (m *mockConfigProvider) HasRESTNumericEnums() bool   { return m.restNumericEnums }
+func (m *mockConfigProvider) HasGoGRPC() bool             { return m.hasGoGRPC }
 
 func TestBuild(t *testing.T) {
 	// The testdata directory is a curated version of a valid protoc
@@ -43,18 +65,18 @@ func TestBuild(t *testing.T) {
 	api := &request.API{
 		Path: "google/cloud/workflows/v1",
 	}
-	bazelConfig := &bazel.Config{
-		GAPICImportPath:   "cloud.google.com/go/workflows/apiv1;workflows",
-		Transport:         "grpc",
-		GRPCServiceConfig: "workflows_grpc_service_config.json",
-		ServiceYAML:       "workflows_v1.yaml",
-		ReleaseLevel:      "ga",
-		Metadata:          true,
-		RESTNumericEnums:  true,
-		HasGoGRPC:         true,
+	config := &mockConfigProvider{
+		gapicImportPath:   "cloud.google.com/go/workflows/apiv1;workflows",
+		transport:         "grpc",
+		grpcServiceConfig: "workflows_grpc_service_config.json",
+		serviceYAML:       "workflows_v1.yaml",
+		releaseLevel:      "ga",
+		metadata:          true,
+		restNumericEnums:  true,
+		hasGoGRPC:         true,
 	}
 
-	got, err := Build(req, api, apiServiceDir, bazelConfig, sourceDir, "/output")
+	got, err := Build(req, api, apiServiceDir, config, sourceDir, "/output")
 	if err != nil {
 		t.Fatalf("Build() failed: %v", err)
 	}
@@ -67,7 +89,7 @@ func TestBuild(t *testing.T) {
 		"--go_gapic_out=/output",
 		"--go_gapic_opt=go-gapic-package=cloud.google.com/go/workflows/apiv1;workflows",
 		"--go_gapic_opt=api-service-config=" + filepath.Join(apiServiceDir, "workflows_v1.yaml"),
-		"--go_gapic_opt=grpc-service-config=" + filepath.join(apiServiceDir, "workflows_grpc_service_config.json"),
+		"--go_gapic_opt=grpc-service-config=" + filepath.Join(apiServiceDir, "workflows_grpc_service_config.json"),
 		"--go_gapic_opt=transport=grpc",
 		"--go_gapic_opt=release-level=ga",
 		"--go_gapic_opt=metadata",

@@ -47,7 +47,7 @@ func postProcess(ctx context.Context, req *request.Request, bazelConfig *bazel.C
 		// We'll use the import path of the first API to initialize the module.
 		// This assumes all APIs in the request belong to the same module.
 		// TODO: Ensure the root module path is used here.
-		importPath := bazelConfig.GAPICImportPath
+		importPath := bazelConfig.GAPICImportPath()
 
 		if err := generateReadmeAndChanges(*outputDir, importPath, req.ID); err != nil {
 			return fmt.Errorf("failed to generate README/CHANGES.md: %w", err)
