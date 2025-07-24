@@ -17,8 +17,11 @@ package generate
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/bazel"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/postprocessor"
@@ -69,6 +72,9 @@ func Generate(ctx context.Context, cfg *Config) error {
 	modulePath, err := handleGapicgen(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("gapic generation failed: %w", err)
+	}
+	if err := fixPermissions(cfg.OutputDir); err != nil {
+		return fmt.Errorf("failed to fix permissions: %w", err)
 	}
 	slog.Info("using module path from final API", "importpath", modulePath)
 
@@ -136,4 +142,22 @@ func readGenerateReq(librarianDir string) (*request.Request, error) {
 	}
 	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
 	return generateReq, nil
+}
+
+// fixPermissions recursively finds all .go files in the given directory and sets
+// their permissions to 0644.
+func fixPermissions(dir string) error {
+	slog.Info("fixing file permissions", "dir", dir)
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".go") {
+			slog.Info("fixing file", "path", path)
+			if err := os.Chmod(path, 0644); err != nil {
+				return fmt.Errorf("failed to chmod %s: %w", path, err)
+			}
+		}
+		return nil
+	})
 }

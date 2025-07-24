@@ -24,6 +24,61 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
+func TestFixPermissions(t *testing.T) {
+	// Create a temporary directory for the test.
+	tmpDir, err := os.MkdirTemp("", "permissions-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a subdirectory to test recursive behavior.
+	subDir := filepath.Join(tmpDir, "subdir")
+	if err := os.Mkdir(subDir, 0755); err != nil {
+		t.Fatalf("failed to create subdir: %v", err)
+	}
+
+	// Create test files with incorrect permissions.
+	goFile1 := filepath.Join(tmpDir, "file1.go")
+	goFile2 := filepath.Join(subDir, "file2.go")
+	otherFile := filepath.Join(tmpDir, "other.txt")
+
+	if err := os.WriteFile(goFile1, []byte("package main"), 0777); err != nil {
+		t.Fatalf("failed to write goFile1: %v", err)
+	}
+	if err := os.WriteFile(goFile2, []byte("package main"), 0777); err != nil {
+		t.Fatalf("failed to write goFile2: %v", err)
+	}
+	if err := os.WriteFile(otherFile, []byte("some text"), 0777); err != nil {
+		t.Fatalf("failed to write otherFile: %v", err)
+	}
+
+	// Run the function to fix permissions.
+	if err := fixPermissions(tmpDir); err != nil {
+		t.Fatalf("fixPermissions() failed: %v", err)
+	}
+
+	// Check permissions of the .go files.
+	for _, f := range []string{goFile1, goFile2} {
+		info, err := os.Stat(f)
+		if err != nil {
+			t.Fatalf("failed to stat %s: %v", f, err)
+		}
+		if info.Mode().Perm() != 0644 {
+			t.Errorf("permission of %s is %v, want 0644", f, info.Mode().Perm())
+		}
+	}
+
+	// Check that the permission of the other file is unchanged.
+	info, err := os.Stat(otherFile)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", otherFile, err)
+	}
+	if info.Mode().Perm() == 0644 {
+		t.Errorf("permission of %s was changed, should not have been", otherFile)
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	// Create a temporary directory for the test.
 	tmpDir, err := os.MkdirTemp("", "generator-test")
