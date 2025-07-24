@@ -53,7 +53,7 @@ rm -f "$BINARY_PATH"
 # --- Setup ---
 
 # Create a temporary directory for the entire test environment.
-TEST_DIR=/Users/chrisdsmith/oss/google-cloud-go/internal/postprocessor/librarian/librariangen/build_out
+TEST_DIR=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out
 echo "Cleaning up from last time: rm -rf $TEST_DIR"
 rm -rf "$TEST_DIR"
 echo "Cleaning up from last time: rm -rf $BINARY_PATH"

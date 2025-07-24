@@ -26,6 +26,13 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
+var (
+	postProcess  = postprocessor.PostProcess
+	bazelParse   = bazel.Parse
+	protocRun    = protoc.Run
+	requestParse = request.Parse
+)
+
 // Config holds the configuration for the generate command.
 type Config struct {
 	LibrarianDir string
@@ -68,7 +75,7 @@ func Generate(ctx context.Context, cfg *Config) error {
 	}
 
 	// TODO(quartzmo): Implement post-processing.
-	if err := postprocessor.PostProcess(ctx, generateReq, modulePath, cfg.OutputDir); err != nil {
+	if err := postProcess(ctx, generateReq, modulePath, cfg.OutputDir); err != nil {
 		return fmt.Errorf("post-processing failed: %w", err)
 	}
 
@@ -87,7 +94,7 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 	reqPath := filepath.Join(cfg.LibrarianDir, "generate-request.json")
 	slog.Info("reading generate request", "path", reqPath)
 
-	generateReq, err := request.Parse(reqPath)
+	generateReq, err := requestParse(reqPath)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +105,7 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 		apiServiceDir := filepath.Join(cfg.SourceDir, api.Path)
 		slog.Info("processing api", "service_dir", apiServiceDir)
 		var err error
-		bazelConfig, err = bazel.Parse(apiServiceDir)
+		bazelConfig, err = bazelParse(apiServiceDir)
 		if err != nil {
 			return "", fmt.Errorf("failed to parse BUILD.bazel for %s: %w", apiServiceDir, err)
 		}
@@ -107,7 +114,7 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to build protoc command for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
-		if err := protoc.Run(ctx, args, cfg.OutputDir); err != nil {
+		if err := protocRun(ctx, args, cfg.OutputDir); err != nil {
 			return "", fmt.Errorf("protoc failed for api %q in library %q: %w", api.Path, generateReq.ID, err)
 		}
 	}
@@ -120,15 +127,13 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 }
 
 // readGenerateReq reads generate-request.json from the librarian-tool input directory.
+// The request file tells librariangen which library and APIs to generate.
+// It is prepared by the Librarian tool and mounted at /librarian.
 func readGenerateReq(librarianDir string) (*request.Request, error) {
-	slog.Info("generate command started")
-
-	// The request file tells librariangen which library and APIs to generate.
-	// It is prepared by the Librarian tool and mounted at /librarian.
 	reqPath := filepath.Join(librarianDir, "generate-request.json")
 	slog.Info("reading generate request", "path", reqPath)
 
-	generateReq, err := request.Parse(reqPath)
+	generateReq, err := requestParse(reqPath)
 	if err != nil {
 		return nil, err
 	}
