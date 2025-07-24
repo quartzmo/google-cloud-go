@@ -35,10 +35,11 @@ var (
 
 // Config holds the configuration for the generate command.
 type Config struct {
-	LibrarianDir string
-	InputDir     string
-	OutputDir    string
-	SourceDir    string
+	LibrarianDir        string
+	InputDir            string
+	OutputDir           string
+	SourceDir           string
+	EnablePostProcessor bool
 }
 
 // Validate ensures that the configuration is valid.
@@ -67,16 +68,19 @@ func Generate(ctx context.Context, cfg *Config) error {
 	}
 	modulePath, err := handleGapicgen(ctx, cfg)
 	if err != nil {
-		return fmt.Errorf("post-processing failed: %w", err)
+		return fmt.Errorf("gapic generation failed: %w", err)
 	}
-	generateReq, err := readGenerateReq(cfg.LibrarianDir)
-	if err != nil {
-		return fmt.Errorf("reading generate-request.json failed: %w", err)
-	}
+	slog.Info("using module path from final API", "importpath", modulePath)
 
-	// TODO(quartzmo): Implement post-processing.
-	if err := postProcess(ctx, generateReq, modulePath, cfg.OutputDir); err != nil {
-		return fmt.Errorf("post-processing failed: %w", err)
+	if cfg.EnablePostProcessor {
+		slog.Info("post-processor enabled")
+		generateReq, err := readGenerateReq(cfg.LibrarianDir)
+		if err != nil {
+			return err
+		}
+		if err := postProcess(ctx, generateReq, modulePath, cfg.OutputDir); err != nil {
+			return fmt.Errorf("post-processing failed: %w", err)
+		}
 	}
 
 	slog.Info("generate command finished")
@@ -89,17 +93,10 @@ func Generate(ctx context.Context, cfg *Config) error {
 func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 	slog.Info("generate command started")
 
-	// The request file tells librariangen which library and APIs to generate.
-	// It is prepared by the Librarian tool and mounted at /librarian.
-	reqPath := filepath.Join(cfg.LibrarianDir, "generate-request.json")
-	slog.Info("reading generate request", "path", reqPath)
-
-	generateReq, err := requestParse(reqPath)
+	generateReq, err := readGenerateReq(cfg.LibrarianDir)
 	if err != nil {
 		return "", err
 	}
-	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
-
 	var bazelConfig *bazel.Config
 	for _, api := range generateReq.APIs {
 		apiServiceDir := filepath.Join(cfg.SourceDir, api.Path)

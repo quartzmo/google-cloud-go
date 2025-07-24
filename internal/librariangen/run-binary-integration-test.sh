@@ -96,6 +96,7 @@ PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HO
   --source="$SOURCE_DIR" \
   --librarian="$LIBRARIAN_DIR" \
   --output="$OUTPUT_DIR" \
+  --enable-post-processor \
   generate >> "$LIBRARIANGEN_LOG" 2>&1
 
 # Run gofmt just like the Bazel rule:
