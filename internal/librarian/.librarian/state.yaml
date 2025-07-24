@@ -1,0 +1,33 @@
+# The name of the image and tag to use for generation.
+image: "gcr.io/cloud-go-infra/librarian-go:latest"
+
+# The state of each library which is released within this repository.
+libraries:
+  - # The library identifier, which for Go is the module name.
+    id: "google-cloud-workflows"
+    # The last version that was released, if any.
+    version: "1.14.2"
+    # The commit hash from the googleapis/googleapis repository at which
+    # the library was last generated.
+    last_generated_commit: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+    # APIs that are bundled as a part of this library.
+    apis:
+      - path: "google/cloud/workflows/v1"
+        service_config: "workflows_v1.yaml"
+      - path: "google/cloud/workflows/v1beta"
+        service_config: "workflows_v1beta.yaml"
+      - path: "google/cloud/workflows/executions/v1"
+        service_config: "workflowexecutions_v1.yaml"
+      - path: "google/cloud/workflows/executions/v1beta"
+        service_config: "workflowexecutions_v1beta.yaml"
+    # Directories to which librarian contributes code. For Go, this is
+    # typically the module directory.
+    source_paths:
+      - "workflows"
+      - "internal/generated/snippets/workflows"
+    # Files/directories to leave untouched during generation.
+    # This is useful for preserving handwritten helper files or customizations.
+    preserve_regex:
+      - "workflows/aliasshim/aliasshim.go"
+      - "workflows/CHANGES.md"
+      - "workflows/internal/version.go"

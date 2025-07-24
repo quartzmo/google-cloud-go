@@ -97,14 +97,14 @@ use (
 	./internal/gapicgen
 	./internal/generated/snippets
 	./internal/godocfx
-	./internal/postprocessor/librarian/generator
+	./internal/librariangen
+	./internal/postprocessor
 	./internal/protoveneer
 	./iot
 	./kms
 	./language
 	./lifesciences
 	./logging
-	./longrunning
 	./lustre
 	./maintenance
 	./managedidentities

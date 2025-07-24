@@ -1,0 +1,21 @@
+{
+  "id": "google-cloud-workflows",
+  "apis": [
+    {
+      "path": "google/cloud/workflows/v1",
+      "service_config": "workflows_v1.yaml"
+    },
+    {
+      "path": "google/cloud/workflows/v1beta",
+      "service_config": "workflows_v1beta.yaml"
+    },
+    {
+      "path": "google/cloud/workflows/executions/v1",
+      "service_config": "workflowexecutions_v1.yaml"
+    },
+    {
+      "path": "google/cloud/workflows/executions/v1beta",
+      "service_config": "workflowexecutions_v1beta.yaml"
+    }
+  ]
+}
