@@ -209,10 +209,20 @@ done
 (
 echo "--- Git Status Summary ---"
 pushd "$GEN_DIR" > /dev/null
+# Get original git config setting.
+original_filemode=$(git config --get core.fileMode)
+# Temporarily ignore file mode changes for a cleaner status report.
+git config core.fileMode false
 # Stage all changes. New files, modifications, and deletions will be staged.
 git add .
-# Print the human-readable status
+# Print the human-readable status. This will now ignore permission changes.
 git status
+# Restore the original file mode setting for subsequent manual inspection.
+if [ -n "$original_filemode" ]; then
+  git config core.fileMode "$original_filemode"
+else
+  git config --unset core.fileMode
+fi
 
 # --- Diff of First Modified File ---
 # Use `git diff --numstat` to find the first file with actual content changes,
