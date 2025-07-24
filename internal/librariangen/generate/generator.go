@@ -76,6 +76,9 @@ func Generate(ctx context.Context, cfg *Config) error {
 	if err := fixPermissions(cfg.OutputDir); err != nil {
 		return fmt.Errorf("failed to fix permissions: %w", err)
 	}
+	if err := flattenOutput(cfg.OutputDir); err != nil {
+		return fmt.Errorf("failed to flatten output: %w", err)
+	}
 	slog.Info("using module path from final API", "importpath", modulePath)
 
 	if cfg.EnablePostProcessor {
@@ -160,4 +163,32 @@ func fixPermissions(dir string) error {
 		}
 		return nil
 	})
+}
+
+// flattenOutput moves the contents of /output/cloud.google.com/go/ to the top
+// level of /output.
+func flattenOutput(outputDir string) error {
+	slog.Info("flattening output directory", "dir", outputDir)
+	goDir := filepath.Join(outputDir, "cloud.google.com", "go")
+	if _, err := os.Stat(goDir); os.IsNotExist(err) {
+		slog.Warn("go directory does not exist, skipping flatten", "path", goDir)
+		return nil
+	}
+	files, err := os.ReadDir(goDir)
+	if err != nil {
+		return fmt.Errorf("failed to read dir %s: %w", goDir, err)
+	}
+	for _, f := range files {
+		oldPath := filepath.Join(goDir, f.Name())
+		newPath := filepath.Join(outputDir, f.Name())
+		slog.Info("moving file", "from", oldPath, "to", newPath)
+		if err := os.Rename(oldPath, newPath); err != nil {
+			return fmt.Errorf("failed to move %s to %s: %w", oldPath, newPath, err)
+		}
+	}
+	// Remove the now-empty cloud.google.com directory.
+	if err := os.RemoveAll(filepath.Join(outputDir, "cloud.google.com")); err != nil {
+		return fmt.Errorf("failed to remove cloud.google.com: %w", err)
+	}
+	return nil
 }

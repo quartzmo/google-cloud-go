@@ -52,7 +52,7 @@ rm -f "$BINARY_PATH"
 
 # --- Setup ---
 
-enable_post_processor=true
+enable_post_processor=false
 # Parse command-line arguments
 for arg in "$@"
 do
@@ -188,7 +188,7 @@ for i in "${!APIS[@]}"; do
   api="${APIS[$i]}"
   gen_api_path="${GEN_API_PATHS[$i]}"
 
-  OUTPUT_API_DIR="$OUTPUT_DIR/cloud.google.com/go/$api"
+  OUTPUT_API_DIR="$OUTPUT_DIR/$api"
   if [ "$enable_post_processor" = true ]; then
     EXPECTED_API_DIR="$GEN_DIR/$gen_api_path"
   else

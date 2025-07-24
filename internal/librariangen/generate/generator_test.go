@@ -79,6 +79,43 @@ func TestFixPermissions(t *testing.T) {
 	}
 }
 
+func TestFlattenOutput(t *testing.T) {
+	// Create a temporary directory for the test.
+	tmpDir, err := os.MkdirTemp("", "flatten-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create the nested directory structure.
+	goDir := filepath.Join(tmpDir, "cloud.google.com", "go")
+	if err := os.MkdirAll(goDir, 0755); err != nil {
+		t.Fatalf("failed to create goDir: %v", err)
+	}
+
+	// Create a file to be moved.
+	filePath := filepath.Join(goDir, "file.txt")
+	if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	// Run the flatten function.
+	if err := flattenOutput(tmpDir); err != nil {
+		t.Fatalf("flattenOutput() failed: %v", err)
+	}
+
+	// Check that the file was moved to the top level.
+	newFilePath := filepath.Join(tmpDir, "file.txt")
+	if _, err := os.Stat(newFilePath); os.IsNotExist(err) {
+		t.Errorf("file was not moved to the top level")
+	}
+
+	// Check that the old directory was removed.
+	if _, err := os.Stat(filepath.Join(tmpDir, "cloud.google.com")); !os.IsNotExist(err) {
+		t.Errorf("old directory was not removed")
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	// Create a temporary directory for the test.
 	tmpDir, err := os.MkdirTemp("", "generator-test")
