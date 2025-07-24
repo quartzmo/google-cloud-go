@@ -52,6 +52,18 @@ rm -f "$BINARY_PATH"
 
 # --- Setup ---
 
+enable_post_processor=true
+# Parse command-line arguments
+for arg in "$@"
+do
+    case $arg in
+        --enable-post-processor)
+        enable_post_processor=true
+        shift # Remove --enable-post-processor from processing
+        ;;
+    esac
+done
+
 # Create a temporary directory for the entire test environment.
 TEST_DIR=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out
 echo "Cleaning up from last time: rm -rf $TEST_DIR"
@@ -92,12 +104,20 @@ GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go build -o "$BINARY_PATH" .
 
 # 4. Run the librariangen generate command.
 echo "Running librariangen..."
-PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HOME/go/bin:$PATH ./librariangen \
-  --source="$SOURCE_DIR" \
-  --librarian="$LIBRARIAN_DIR" \
-  --output="$OUTPUT_DIR" \
-  --enable-post-processor \
-  generate >> "$LIBRARIANGEN_LOG" 2>&1
+if [ "$enable_post_processor" = true ]; then
+    PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HOME/go/bin:$PATH ./librariangen \
+      --source="$SOURCE_DIR" \
+      --librarian="$LIBRARIAN_DIR" \
+      --output="$OUTPUT_DIR" \
+      --enable-post-processor \
+      generate >> "$LIBRARIANGEN_LOG" 2>&1
+else
+    PATH=$(GOWORK=off GOTOOLCHAIN=${LIBRARIANGEN_GOTOOLCHAIN} go env GOPATH)/bin:$HOME/go/bin:$PATH ./librariangen \
+      --source="$SOURCE_DIR" \
+      --librarian="$LIBRARIAN_DIR" \
+      --output="$OUTPUT_DIR" \
+      generate >> "$LIBRARIANGEN_LOG" 2>&1
+fi
 
 # Run gofmt just like the Bazel rule:
 # https://github.com/googleapis/gapic-generator-go/blob/main/rules_go_gapic/go_gapic.bzl#L34
@@ -114,27 +134,45 @@ if [ -z "$(ls -A "$OUTPUT_DIR")" ]; then
   exit 1
 fi
 
-# Use a cached version of googleapis-gen if available.
-if [ ! -d "$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR" ]; then
-  echo "Error: LIBRARIANGEN_GOOGLEAPIS_GEN_DIR is not set or not a directory."
-  echo "Please set it to the path of your local googleapis-gen clone."
-  exit 1
+if [ "$enable_post_processor" = true ]; then
+    # Use a cached version of google-cloud-go if available.
+    if [ ! -d "$LIBRARIANGEN_GOOGLE_CLOUD_GO_DIR" ]; then
+      echo "Error: LIBRARIANGEN_GOOGLE_CLOUD_GO_DIR is not set or not a directory."
+      echo "Please set it to the path of your local google-cloud-go clone."
+      exit 1
+    fi
+    echo "Using cached google-cloud-go from $LIBRARIANGEN_GOOGLE_CLOUD_GO_DIR"
+    GEN_DIR="$LIBRARIANGEN_GOOGLE_CLOUD_GO_DIR"
+    # Define the API paths to verify.
+    APIS=(
+      "chronicle/apiv1"
+    )
+    # These are the corresponding paths in the google-cloud-go repository.
+    GEN_API_PATHS=(
+      "chronicle/apiv1"
+    )
+else
+    # Use a cached version of googleapis-gen if available.
+    if [ ! -d "$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR" ]; then
+      echo "Error: LIBRARIANGEN_GOOGLEAPIS_GEN_DIR is not set or not a directory."
+      echo "Please set it to the path of your local googleapis-gen clone."
+      exit 1
+    fi
+    echo "Using cached googleapis-gen from $LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
+    GEN_DIR="$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
+    # Define the API paths to verify.
+    APIS=(
+      "chronicle/apiv1"
+    )
+    # These are the corresponding paths in the googleapis-gen repository.
+    GEN_API_PATHS=(
+      "google/cloud/chronicle/v1"
+    )
 fi
-echo "Using cached googleapis-gen from $LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
-GEN_DIR="$LIBRARIANGEN_GOOGLEAPIS_GEN_DIR"
-
-# Define the API paths to verify.
-APIS=(
-  "chronicle/apiv1"
-)
-# These are the corresponding paths in the googleapis-gen repository.
-GEN_API_PATHS=(
-  "google/cloud/chronicle/v1"
-)
 
 # --- Verification using Git ---
-echo "Verifying output by comparing with the googleapis-gen repository..."
-echo "The script will modify files in your local googleapis-gen clone."
+echo "Verifying output by comparing with the goldens repository..."
+echo "The script will modify files in your local goldens clone."
 
 # Before files are copied, run git reset and git clean to clean up prior run.
 (
@@ -151,7 +189,11 @@ for i in "${!APIS[@]}"; do
   gen_api_path="${GEN_API_PATHS[$i]}"
 
   OUTPUT_API_DIR="$OUTPUT_DIR/cloud.google.com/go/$api"
-  EXPECTED_API_DIR="$GEN_DIR/$gen_api_path/cloud.google.com/go/$api"
+  if [ "$enable_post_processor" = true ]; then
+    EXPECTED_API_DIR="$GEN_DIR/$gen_api_path"
+  else
+    EXPECTED_API_DIR="$GEN_DIR/$gen_api_path/cloud.google.com/go/$api"
+  fi
 
   # 1. Remove everything from the expected directory
   rm -rf "${EXPECTED_API_DIR:?}"/*
@@ -189,10 +231,10 @@ popd > /dev/null
 ) >> "$LIBRARIANGEN_LOG" 2>&1
 
 echo ""
-echo "Verification complete. The status above shows the difference between the"
-echo "expected generated output (goldens) and the current modified state of your googleapis-gen repository (librariangen)."
+echo "Verification complete. The status in $LIBRARIANGEN_LOG shows the difference between the"
+echo "expected generated output (goldens) and the current modified state of your goldens repository (librariangen)."
 echo ""
-echo -e "To reset your googleapis-gen repository:"
+echo -e "To reset your goldens repository:"
 echo "  cd $GEN_DIR"
 echo "  git reset --hard HEAD && git clean -fd"
 
