@@ -57,7 +57,7 @@ func testRun(t *testing.T, args ...string) error {
 		librarianDir, inputDir, outputDir, sourceDir = originalLibrarianDir, originalInputDir, originalOutputDir, originalSourceDir
 	}()
 
-	return run(context.Background())
+	return handleCommand(context.Background())
 }
 
 // TestRun_Commands verifies that the run function correctly dispatches to the
