@@ -1,0 +1,16 @@
+Cleaning up from last time: rm -f librariangen-container.log
+Using temporary directory: /tmp/tmp.0fT7RN7waJ
+Using googleapis source from /usr/local/google/home/chrisdsmith/oss/googleapis
+Running librariangen container...
+Verifying output...
+Librariangen logs are available in: librariangen-container.log
+Using cached google-cloud-go from /usr/local/google/home/chrisdsmith/oss/google-cloud-go-2
+Verifying output by comparing with the goldens repository...
+
+Verification complete. The status in librariangen-container.log shows the difference.
+To reset your goldens repository:
+  cd /usr/local/google/home/chrisdsmith/oss/google-cloud-go-2
+  git reset --hard HEAD && git clean -fd
+Container integration test passed successfully.
+Generated files are available for inspection in: /tmp/tmp.0fT7RN7waJ/output
+
