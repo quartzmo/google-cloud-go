@@ -29,38 +29,50 @@ This phase focuses on testing the compiled Go binary directly to ensure all comp
 
 *   [x] **7. Create Binary Integration Test Script**
     *   **Coding:**
-        *   Create a new script: `run-binary-integration-test.sh`.
-        *   The script should:
+        *   [x] Create a new script: `run-binary-integration-test.sh`.
+        *   [x] The script should:
             1.  Create a temporary directory structure to simulate the required inputs (e.g., `/tmp/test-env/source`, `/tmp/test-env/librarian`, `/tmp/test-env/output`).
             2.  Copy the `generator/protoc/testdata/source` directory into the temporary source directory.
             3.  Create a sample `generate-request.json` in the temporary librarian directory, pointing to an API to generate (e.g., `google/cloud/workflows/v1`).
             4.  Compile the `librariangen` binary using `go build`.
             5.  Execute the compiled binary with the `generate` command, using flags (`--source`, `--librarian`, `--output`) to point to the temporary directories.
             6.  Verify that the command succeeds and that `.pb.go` files are created in the temporary output directory.
-            [ ] 7.  Check out the `https://github.com/googleapis/googleapis-gen` private repository to the temporary root directory.
-            [ ] 8.  Copy the temporary output directory contents into the `googleapis-gen/tree/master/google/cloud/workflows/v1` directory.
-            [ ] 9.  Run `git diff` and raise an error with the output if non-empty. This means that the output of `librarian` gen does not match the output of the legacy Bazel build.
+            7.  Check out the `https://github.com/googleapis/googleapis-gen` private repository to the temporary root directory.
+            8.  Copy the temporary output directory contents into the `googleapis-gen/tree/master/google/cloud/workflows/v1` directory.
+            9.  Run `git diff` and raise an error with the output if non-empty. This means that the output of `librarian` gen does not match the output of the legacy Bazel build.
             10. Clean up the temporary directories.
     *   **Testing:**
-        *   Run the script locally to confirm it passes.
+        *   [x] Run the script locally to confirm it passes.
 
 ## Phase 5: Post-processing
 
 This phase implements the steps that run after generation to make the code a complete, release-ready Go module.
 
-*   [ ] **8. Implement Post-processing Steps**
+*   [x] **8. Implement Initial Post-processing Steps**
     *   **Coding:**
-        *   Create a new package `postprocessor` (`librariangen/postprocessor`).
-        *   Create a main function `Process(outputDir string, version string, modulePath string) error`.
-        *   Implement the following post-processing steps:
-        *   [ ] Run `goimports -w .`
-        *   [ ] Run `go mod init <modulePath>`
-        *   [ ] Run `go mod tidy`
-        *   [ ] Generate `version.go` file.
-        *   [ ] Run `staticcheck ./...`
-        *   [ ] Implement snippet metadata updates.
+        *   [x] Create a new package `postprocessor` (`librariangen/postprocessor`).
+        *   [x] Create a main function `Process(outputDir string, version string, modulePath string) error`.
+        *   [x] Implement the following post-processing steps:
+        *   [x] Run `goimports -w .`
+        *   [x] Run `go mod init <modulePath>`
+        *   [x] Run `go mod tidy`
+        *   [x] Generate `README.md` and `CHANGES.md`
+        *   [x] Run `staticcheck ./...`
     *   **Integration Testing:**
-        *   Create `postprocessor/postprocessor_integration_test.go` to test the `Process` function.
+        *   [x] Create `postprocessor/postprocessor_integration_test.go` to test the `Process` function.
+
+*   [ ] **8a. Refine Post-processor for Backward Compatibility**
+    *   **Description:** The initial post-processor implementation does not perfectly match the output of the legacy system. This phase will refine the logic to achieve a clean diff against the golden repository.
+    *   **Coding (`postprocessor.go`):**
+        *   [ ] Derive the correct, shorter module path (e.g., `cloud.google.com/go/chronicle`) from the `gapicImportPath` for use in `go mod init`.
+        *   [ ] Remove the call to `go mod tidy`, as it pulls in dependency versions that are too new.
+        *   [ ] Remove the call to `staticcheck`, as it cannot be run without a complete module.
+        *   [ ] Remove the creation of `CHANGES.md`, as this file should be preserved from the golden repo.
+        *   [ ] Update the `README.md` template and the data passed to it to match the simpler format of the golden files.
+    *   **Coding (`generator.go`):**
+        *   [ ] Update the call to the `PostProcess` function to pass the correct module-specific directory (e.g., `/output/chronicle`) instead of the root output directory.
+    *   **Integration Testing (`run-binary-integration-test.sh`):**
+        *   [ ] Add logic to copy the golden `go.sum` and `CHANGES.md` files from the `google-cloud-go` repository into the generated module directory before the final `git diff`. This will ensure perfect dependency and changelog alignment.
 
 ## Phase 6: Containerization and E2E Testing
 

@@ -32,10 +32,10 @@ var readmeTmpl string
 
 // postProcess is the entrypoint for post-processing generated files.
 // It runs formatters and other tools to ensure code quality.
-func PostProcess(ctx context.Context, req *request.Request, modulePath, outputDir string) error {
-	slog.Info("starting post-processing", "directory", outputDir)
+func PostProcess(ctx context.Context, req *request.Request, modulePath, moduleDir string) error {
+	slog.Info("starting post-processing", "directory", moduleDir)
 
-	if err := goimports(ctx, outputDir); err != nil {
+	if err := goimports(ctx, moduleDir); err != nil {
 		// Log a warning instead of failing, as goimports might not be critical.
 		slog.Warn("goimports failed, continuing without it", "error", err)
 	}
@@ -44,19 +44,19 @@ func PostProcess(ctx context.Context, req *request.Request, modulePath, outputDi
 	// Let's try to initialize one.
 	if len(req.APIs) > 0 {
 
-		if err := generateReadmeAndChanges(outputDir, modulePath, req.ID); err != nil {
+		if err := generateReadmeAndChanges(moduleDir, modulePath, req.ID); err != nil {
 			return fmt.Errorf("failed to generate README/CHANGES.md: %w", err)
 		}
 
-		if err := goModInit(ctx, modulePath, outputDir); err != nil {
+		if err := goModInit(ctx, modulePath, moduleDir); err != nil {
 			return fmt.Errorf("failed to run 'go mod init': %w", err)
 		}
 
-		if err := goModTidy(ctx, outputDir); err != nil {
+		if err := goModTidy(ctx, moduleDir); err != nil {
 			return fmt.Errorf("failed to run 'go mod tidy': %w", err)
 		}
 
-		if err := staticcheck(ctx, outputDir); err != nil {
+		if err := staticcheck(ctx, moduleDir); err != nil {
 			// Also a warning, as it might be too strict for generated code.
 			slog.Warn("staticcheck failed, continuing without it", "error", err)
 		}
@@ -68,34 +68,34 @@ func PostProcess(ctx context.Context, req *request.Request, modulePath, outputDi
 
 // goimports runs the goimports tool on a directory to format Go files and
 // manage imports.
-func goimports(ctx context.Context, outputDir string) error {
-	slog.Info("running goimports", "directory", outputDir)
+func goimports(ctx context.Context, dir string) error {
+	slog.Info("running goimports", "directory", dir)
 	// The `.` argument will make goimports process all go files in the directory
 	// and its subdirectories. The -w flag writes results back to source files.
 	args := []string{"goimports", "-w", "."}
-	return protoc.Run(ctx, args, outputDir)
+	return protoc.Run(ctx, args, dir)
 }
 
 // goModInit initializes a go.mod file in the given directory.
-func goModInit(ctx context.Context, modulePath, outputDir string) error {
-	slog.Info("running go mod init", "directory", outputDir, "modulePath", modulePath)
+func goModInit(ctx context.Context, modulePath, dir string) error {
+	slog.Info("running go mod init", "directory", dir, "modulePath", modulePath)
 	args := []string{"go", "mod", "init", modulePath}
-	return protoc.Run(ctx, args, outputDir)
+	return protoc.Run(ctx, args, dir)
 }
 
 // goModTidy tidies the go.mod file, adding missing and removing unused dependencies.
-func goModTidy(ctx context.Context, outputDir string) error {
-	slog.Info("running go mod tidy", "directory", outputDir)
+func goModTidy(ctx context.Context, dir string) error {
+	slog.Info("running go mod tidy", "directory", dir)
 	args := []string{"go", "mod", "tidy"}
-	return protoc.Run(ctx, args, outputDir)
+	return protoc.Run(ctx, args, dir)
 }
 
 // staticcheck runs the staticcheck linter on the code in a directory.
-func staticcheck(ctx context.Context, outputDir string) error {
-	slog.Info("running staticcheck", "directory", outputDir)
+func staticcheck(ctx context.Context, dir string) error {
+	slog.Info("running staticcheck", "directory", dir)
 	// ./... checks all packages in the current directory and subdirectories.
 	args := []string{"staticcheck", "./..."}
-	return protoc.Run(ctx, args, outputDir)
+	return protoc.Run(ctx, args, dir)
 }
 
 // generateReadmeAndChanges creates a README.md and CHANGES.md file for a new module.

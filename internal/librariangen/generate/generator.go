@@ -87,7 +87,20 @@ func Generate(ctx context.Context, cfg *Config) error {
 		if err != nil {
 			return err
 		}
-		if err := postProcess(ctx, generateReq, modulePath, cfg.OutputDir); err != nil {
+		// The module name is the first part of the API path.
+		// E.g. google/cloud/workflows/v1 -> workflows
+		moduleName := ""
+		if len(generateReq.APIs) > 0 {
+			parts := strings.Split(generateReq.APIs[0].Path, "/")
+			if len(parts) > 2 {
+				moduleName = parts[2]
+			}
+		}
+		if moduleName == "" {
+			return fmt.Errorf("could not determine module name from API path")
+		}
+		moduleDir := filepath.Join(cfg.OutputDir, moduleName)
+		if err := postProcess(ctx, generateReq, modulePath, moduleDir); err != nil {
 			return fmt.Errorf("post-processing failed: %w", err)
 		}
 	}

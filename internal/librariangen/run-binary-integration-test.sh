@@ -52,7 +52,7 @@ rm -f "$BINARY_PATH"
 
 # --- Setup ---
 
-enable_post_processor=false
+enable_post_processor=true
 # Parse command-line arguments
 for arg in "$@"
 do
@@ -184,25 +184,30 @@ popd > /dev/null
 ) >> "$LIBRARIANGEN_LOG" 2>&1
 
 # Process each API by replacing the expected files with the generated ones
-for i in "${!APIS[@]}"; do
-  api="${APIS[$i]}"
-  gen_api_path="${GEN_API_PATHS[$i]}"
+if [ "$enable_post_processor" = true ]; then
+    module_name=$(echo "${APIS[0]}" | cut -d'/' -f1)
+    OUTPUT_MODULE_DIR="$OUTPUT_DIR/$module_name"
+    EXPECTED_MODULE_DIR="$GEN_DIR/$module_name"
+    rm -rf "${EXPECTED_MODULE_DIR:?}"/*
+    mkdir -p "$EXPECTED_MODULE_DIR"
+    cp -a "$OUTPUT_MODULE_DIR"/. "$EXPECTED_MODULE_DIR/"
+else
+    for i in "${!APIS[@]}"; do
+      api="${APIS[$i]}"
+      gen_api_path="${GEN_API_PATHS[$i]}"
 
-  OUTPUT_API_DIR="$OUTPUT_DIR/$api"
-  if [ "$enable_post_processor" = true ]; then
-    EXPECTED_API_DIR="$GEN_DIR/$gen_api_path"
-  else
-    EXPECTED_API_DIR="$GEN_DIR/$gen_api_path/cloud.google.com/go/$api"
-  fi
+      OUTPUT_API_DIR="$OUTPUT_DIR/$api"
+      EXPECTED_API_DIR="$GEN_DIR/$gen_api_path/cloud.google.com/go/$api"
 
-  # 1. Remove everything from the expected directory
-  rm -rf "${EXPECTED_API_DIR:?}"/*
+      # 1. Remove everything from the expected directory
+      rm -rf "${EXPECTED_API_DIR:?}"/*
 
-  # 2. Copy over all files from the output directory
-  # Ensure the directory exists after cleaning
-  mkdir -p "$EXPECTED_API_DIR"
-  cp -a "$OUTPUT_API_DIR"/. "$EXPECTED_API_DIR/"
-done
+      # 2. Copy over all files from the output directory
+      # Ensure the directory exists after cleaning
+      mkdir -p "$EXPECTED_API_DIR"
+      cp -a "$OUTPUT_API_DIR"/. "$EXPECTED_API_DIR/"
+    done
+fi
 
 # After all files are copied, run git add and git status to show changes.
 # This entire section is redirected to the log file for later inspection.
@@ -214,9 +219,16 @@ original_filemode=$(git config --get core.fileMode)
 # Temporarily ignore file mode changes for a cleaner status report.
 git config core.fileMode false
 # Stage all changes. New files, modifications, and deletions will be staged.
-git add .
-# Print the human-readable status. This will now ignore permission changes.
-git status
+if [ "$enable_post_processor" = true ]; then
+    module_name=$(echo "${APIS[0]}" | cut -d'/' -f1)
+    git add "$module_name"
+    # Print the human-readable status. This will now ignore permission changes.
+    git status "$module_name"
+else
+    git add .
+    # Print the human-readable status. This will now ignore permission changes.
+    git status
+fi
 # Restore the original file mode setting for subsequent manual inspection.
 if [ -n "$original_filemode" ]; then
   git config core.fileMode "$original_filemode"
@@ -225,16 +237,27 @@ else
 fi
 
 # --- Diff of First Modified File ---
-# Use `git diff --numstat` to find the first file with actual content changes,
-# ignoring the noise from permission-only differences.
-first_modified_file=$(git -C "$GEN_DIR" diff --staged --numstat | awk '$1 != "0" || $2 != "0" {print $3}' | head -n 1)
+if [ "$enable_post_processor" = true ]; then
+    module_name=$(echo "${APIS[0]}" | cut -d'/' -f1)
+    # Find all top-level files in the output module directory.
+    top_level_files=$(find "$OUTPUT_DIR/$module_name" -maxdepth 1 -type f -exec basename {} \;)
+    for file in $top_level_files; do
+        echo ""
+        echo "--- Diff for $module_name/$file ---"
+        git -C "$GEN_DIR" -c core.pager=cat diff --staged -p -- "$module_name/$file"
+    done
+else
+    # Use `git diff --numstat` to find the first file with actual content changes,
+    # ignoring the noise from permission-only differences.
+    first_modified_file=$(git -C "$GEN_DIR" diff --staged --numstat | awk '$1 != "0" || $2 != "0" {print $3}' | head -n 1)
 
-if [ -n "$first_modified_file" ]; then
-  echo ""
-  echo "--- Diff for first modified file: $first_modified_file ---"
-  # Run git diff --staged to see the staged changes for that file in patch format.
-  # We use `-c core.pager=cat` to prevent git from opening an interactive pager.
-  git -C "$GEN_DIR" -c core.pager=cat diff --staged -p -- "$first_modified_file"
+    if [ -n "$first_modified_file" ]; then
+      echo ""
+      echo "--- Diff for first modified file: $first_modified_file ---"
+      # Run git diff --staged to see the staged changes for that file in patch format.
+      # We use `-c core.pager=cat` to prevent git from opening an interactive pager.
+      git -C "$GEN_DIR" -c core.pager=cat diff --staged -p -- "$first_modified_file"
+    fi
 fi
 
 popd > /dev/null
