@@ -96,7 +96,7 @@ RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v${GO_PROTOC_PLUGIN_VERSION} && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v${GO_GRPC_PLUGIN_VERSION} && \
     go install github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v${GAPIC_GENERATOR_VERSION} && \
-    go install golang.orgx/tools/cmd/goimports@latest && \
+    go install golang.org/x/tools/cmd/goimports@latest && \
     go install honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}
 
 # Copy the compiled librariangen binary from the builder stage.
