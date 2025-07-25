@@ -27,6 +27,7 @@ if ! command -v librariangen &> /dev/null; then
     exit 1
 fi
 echo "librariangen found."
+echo "version: \$(librariangen --version)"
 
 echo ""
 echo "--- Verifying Go ---"

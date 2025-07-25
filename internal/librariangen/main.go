@@ -25,6 +25,8 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/generate"
 )
 
+const version = "0.1.0"
+
 // main is the entrypoint for the librariangen CLI.
 func main() {
 	slog.Info("librariangen invoked", "args", os.Args)
@@ -40,6 +42,13 @@ var generateFunc = generate.Generate
 // run executes the appropriate command based on the CLI's invocation arguments.
 func run(ctx context.Context, args []string) error {
 	if len(args) < 1 {
+		// Check for a version flag if no other args are present.
+		for _, arg := range os.Args[1:] {
+			if arg == "--version" {
+				fmt.Println(version)
+				return nil
+			}
+		}
 		return fmt.Errorf("expected a command")
 	}
 
@@ -51,6 +60,14 @@ func run(ctx context.Context, args []string) error {
 			cmd = arg
 			flags = append(args[:i], args[i+1:]...)
 			break
+		}
+	}
+
+	// Handle --version flag even if other flags are present.
+	for _, arg := range args {
+		if arg == "--version" {
+			fmt.Println(version)
+			return nil
 		}
 	}
 
