@@ -94,9 +94,11 @@ The implementation consists of a Go application packaged into a Docker container
 
 The `librariangen` Docker container must use a MOSS-compliant [Google-approved base image](https://cloud.google.com/software-supply-chain-security/docs/base-images#google-provided_base_images) The preferred base image for Go is currently [`marketplace.gcr.io/google/debian12:latest`](http://marketplace.gcr.io/google/debian12:latest). (Debian is used for the official Go images at [https://hub.docker.com/\_/golang](https://hub.docker.com/_/golang), however these are not MOSS-compliant and Google-approved.)
 
+**Note on Local Development:** Access to `marketplace.gcr.io` may require special IAM permissions that are not available to all developers. For local development and testing, it is acceptable to temporarily replace this with a publicly available equivalent, such as `debian:12-slim`, to unblock the build process. The official `Dockerfile` should contain a `TODO` reminding the developer to switch back to the MOSS-compliant image for production builds.
+
 The Dockerfile is responsible for:
 
-* Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools. The versions must be copied from current existing configuration for `bazel-bot/OwlBot` and `google-cloud-go`, such as the `_protobuf_version` setting in the `googleapis` [WORKSPACE](https://github.com/googleapis/googleapis/blob/master/WORKSPACE) file.
+* Installing specific, pinned versions of Go (`1.23.0`), `protoc` (`25.7`), and other required tools. The versions must be copied from current existing configuration for `bazel-bot/OwlBot` and `google-cloud-go` to ensure backward compatibility. For example, the `go.mod` file in the golden repository may specify an older Go version, and using a newer version will cause a diff.
 * Installing the latest compatible versions of the necessary Go protoc plugins: `google.golang.org/protobuf/cmd/protoc-gen-go` and `github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic`.
 * Copying `librariangen`'s Go source code into the image and building it into a single executable binary (`/librariangen`).
 * Setting the `ENTRYPOINT` to the `/librariangen` binary.

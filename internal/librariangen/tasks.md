@@ -61,34 +61,36 @@ This phase implements the steps that run after generation to make the code a com
     *   **Integration Testing:**
         *   [x] Create `postprocessor/postprocessor_integration_test.go` to test the `Process` function.
 
-*   [ ] **8a. Refine Post-processor for Backward Compatibility**
+*   [x] **8a. Refine Post-processor for Backward Compatibility**
     *   **Description:** The initial post-processor implementation does not perfectly match the output of the legacy system. This phase will refine the logic to achieve a clean diff against the golden repository.
     *   **Coding (`postprocessor.go`):**
-        *   [ ] Derive the correct, shorter module path (e.g., `cloud.google.com/go/chronicle`) from the `gapicImportPath` for use in `go mod init`.
-        *   [ ] Remove the call to `go mod tidy`, as it pulls in dependency versions that are too new.
-        *   [ ] Remove the call to `staticcheck`, as it cannot be run without a complete module.
-        *   [ ] Remove the creation of `CHANGES.md`, as this file should be preserved from the golden repo.
-        *   [ ] Update the `README.md` template and the data passed to it to match the simpler format of the golden files.
+        *   [x] Derive the correct, shorter module path (e.g., `cloud.google.com/go/chronicle`) from the `gapicImportPath` for use in `go mod init`.
+        *   [x] Remove the call to `go mod tidy`, as it pulls in dependency versions that are too new.
+        *   [x] Remove the call to `staticcheck`, as it cannot be run without a complete module.
+        *   [x] Remove the creation of `CHANGES.md`, as this file should be preserved from the golden repo.
+        *   [x] Update the `README.md` template and the data passed to it to match the simpler format of the golden files.
+        *   [x] Add explicit `newModule` parameter and `TODO` for orchestrator integration.
     *   **Coding (`generator.go`):**
-        *   [ ] Update the call to the `PostProcess` function to pass the correct module-specific directory (e.g., `/output/chronicle`) instead of the root output directory.
+        *   [x] Update the call to the `PostProcess` function to pass the correct module-specific directory (e.g., `/output/chronicle`) instead of the root output directory.
     *   **Integration Testing (`run-binary-integration-test.sh`):**
-        *   [ ] Add logic to copy the golden `go.sum` and `CHANGES.md` files from the `google-cloud-go` repository into the generated module directory before the final `git diff`. This will ensure perfect dependency and changelog alignment.
+        *   [x] Add logic to copy the golden `go.sum` and `CHANGES.md` files from the `google-cloud-go` repository into the generated module directory before the final `git diff`. This will ensure perfect dependency and changelog alignment.
 
 ## Phase 6: Containerization and E2E Testing
 
 This phase focuses on packaging the application in Docker and performing high-level, end-to-end validation.
 
-*   [ ] **9. Create Dockerfile**
+*   [x] **9. Create Dockerfile**
     *   **Coding:**
-        *   Create the `generator/Dockerfile` as specified in the design document.
-        *   Use a multi-stage build to create a minimal final image.
-        *   Ensure the container build process is hermetic.
-        *   Ensure all tool versions are pinned.
-        *   Set the `ENTRYPOINT` to `/librariangen`.
+        *   [x] Create the `generator/Dockerfile` as specified in the design document.
+        *   [x] Use a multi-stage build to create a minimal final image.
+        *   [x] Ensure the container build process is hermetic.
+        *   [x] Ensure all tool versions are pinned.
+        *   [x] Set the `ENTRYPOINT` to `/librariangen`.
+        *   [ ] **TODO:** The `Dockerfile` currently uses a public `debian:12-slim` base image to unblock local development due to authentication issues with the MOSS-compliant base image. This **must** be switched back to `marketplace.gcr.io/google/debian12:latest` for production builds.
 
-*   [ ] **10. Create Test and Deployment Scripts**
-    *   [ ] Create a `test.sh` smoke test script to perform basic validation of the final Docker image.
-    *   [ ] Create a `run-container-tests.sh` script to execute the full, containerized workflow.
+*   [x] **10. Create Test and Deployment Scripts**
+    *   [x] Create a `build-docker-and-test.sh` script to perform basic validation of the final Docker image.
+    *   [x] Create a `run-container-integration-test.sh` script to execute the full, containerized workflow.
     *   [ ] Document the process for publishing the container.
 
 *   [ ] **11. Manual Integration Testing**
