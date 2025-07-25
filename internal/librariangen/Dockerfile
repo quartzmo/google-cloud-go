@@ -76,6 +76,7 @@ RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
     curl \
+    git \
     unzip \
     wget && \
     rm -rf /var/lib/apt/lists/*
