@@ -18,7 +18,10 @@
 
 # --- Builder Stage ---
 # This stage builds the librariangen binary using the MOSS-compliant base image.
-FROM marketplace.gcr.io/google/debian12:latest as builder
+# TODO: For production builds, this must be switched back to the MOSS-compliant
+# base image.
+# FROM marketplace.gcr.io/google/debian12:latest as builder
+FROM debian:12-slim as builder
 
 # Set environment variables for tool versions for easy updates.
 ENV GO_VERSION=1.23.0
@@ -50,7 +53,10 @@ RUN CGO_ENABLED=0 go build -o /librariangen .
 # --- Final Stage ---
 # This stage creates the final, minimal image with the compiled binary and
 # all required runtime dependencies pinned to specific versions for compatibility.
-FROM marketplace.gcr.io/google/debian12:latest
+# TODO: For production builds, this must be switched back to the MOSS-compliant
+# base image.
+# FROM marketplace.gcr.io/google/debian12:latest
+FROM debian:12-slim
 
 # Set environment variables for tool versions for easy updates.
 ENV GO_VERSION=1.23.0
