@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/protoc"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
@@ -30,36 +31,42 @@ import (
 //go:embed _README.md.txt
 var readmeTmpl string
 
-// postProcess is the entrypoint for post-processing generated files.
+// PostProcess is the entrypoint for post-processing generated files.
 // It runs formatters and other tools to ensure code quality.
-func PostProcess(ctx context.Context, req *request.Request, modulePath, moduleDir string) error {
-	slog.Info("starting post-processing", "directory", moduleDir)
+func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
+	slog.Info("starting post-processing", "directory", moduleDir, "new_module", newModule)
 
 	if err := goimports(ctx, moduleDir); err != nil {
-		// Log a warning instead of failing, as goimports might not be critical.
 		slog.Warn("goimports failed, continuing without it", "error", err)
 	}
 
-	// To run more advanced tools like staticcheck, we need a go.mod file.
-	// Let's try to initialize one.
-	if len(req.APIs) > 0 {
+	if len(req.APIs) == 0 {
+		slog.Info("no APIs in request, skipping module initialization")
+		return nil
+	}
 
-		if err := generateReadmeAndChanges(moduleDir, modulePath, req.ID); err != nil {
-			return fmt.Errorf("failed to generate README/CHANGES.md: %w", err)
-		}
+	// E.g. google-cloud-chronicle -> chronicle
+	moduleName := strings.TrimPrefix(req.ID, "google-cloud-")
+	shortModulePath := "cloud.google.com/go/" + moduleName
+	// E.g. google-cloud-chronicle -> Chronicle API
+	friendlyAPIName := strings.Title(strings.Replace(moduleName, "-", " ", -1)) + " API"
 
-		if err := goModInit(ctx, modulePath, moduleDir); err != nil {
+	if newModule {
+		slog.Info("initializing new module")
+		if err := goModInit(ctx, shortModulePath, moduleDir); err != nil {
 			return fmt.Errorf("failed to run 'go mod init': %w", err)
 		}
-
-		if err := goModTidy(ctx, moduleDir); err != nil {
-			return fmt.Errorf("failed to run 'go mod tidy': %w", err)
+		if err := generateChanges(moduleDir); err != nil {
+			return fmt.Errorf("failed to generate CHANGES.md: %w", err)
 		}
-
-		if err := staticcheck(ctx, moduleDir); err != nil {
-			// Also a warning, as it might be too strict for generated code.
-			slog.Warn("staticcheck failed, continuing without it", "error", err)
+		if err := generateInternalVersionFile(moduleDir); err != nil {
+			return fmt.Errorf("failed to generate internal/version.go: %w", err)
 		}
+	}
+
+	// The README should be updated on every run.
+	if err := generateReadme(moduleDir, shortModulePath, friendlyAPIName); err != nil {
+		return fmt.Errorf("failed to generate README.md: %w", err)
 	}
 
 	slog.Info("post-processing finished successfully")
@@ -83,23 +90,8 @@ func goModInit(ctx context.Context, modulePath, dir string) error {
 	return protoc.Run(ctx, args, dir)
 }
 
-// goModTidy tidies the go.mod file, adding missing and removing unused dependencies.
-func goModTidy(ctx context.Context, dir string) error {
-	slog.Info("running go mod tidy", "directory", dir)
-	args := []string{"go", "mod", "tidy"}
-	return protoc.Run(ctx, args, dir)
-}
-
-// staticcheck runs the staticcheck linter on the code in a directory.
-func staticcheck(ctx context.Context, dir string) error {
-	slog.Info("running staticcheck", "directory", dir)
-	// ./... checks all packages in the current directory and subdirectories.
-	args := []string{"staticcheck", "./..."}
-	return protoc.Run(ctx, args, dir)
-}
-
-// generateReadmeAndChanges creates a README.md and CHANGES.md file for a new module.
-func generateReadmeAndChanges(path, modulePath, apiName string) error {
+// generateReadme creates a README.md file for a new module.
+func generateReadme(path, modulePath, apiName string) error {
 	readmePath := filepath.Join(path, "README.md")
 	slog.Info("creating file", "path", readmePath)
 	readmeFile, err := os.Create(readmePath)
@@ -115,17 +107,28 @@ func generateReadmeAndChanges(path, modulePath, apiName string) error {
 		Name:       apiName,
 		ModulePath: modulePath,
 	}
-	if err := t.Execute(readmeFile, readmeData); err != nil {
-		return err
-	}
+	return t.Execute(readmeFile, readmeData)
+}
 
-	changesPath := filepath.Join(path, "CHANGES.md")
+// generateChanges creates a CHANGES.md file for a new module.
+func generateChanges(moduleDir string) error {
+	changesPath := filepath.Join(moduleDir, "CHANGES.md")
 	slog.Info("creating file", "path", changesPath)
-	changesFile, err := os.Create(changesPath)
-	if err != nil {
+	content := "# Changes\n"
+	return os.WriteFile(changesPath, []byte(content), 0644)
+}
+
+// generateInternalVersionFile creates an internal/version.go file for a new module.
+func generateInternalVersionFile(moduleDir string) error {
+	internalDir := filepath.Join(moduleDir, "internal")
+	if err := os.MkdirAll(internalDir, 0755); err != nil {
 		return err
 	}
-	defer changesFile.Close()
-	_, err = changesFile.WriteString("# Changes\n")
-	return err
+	versionPath := filepath.Join(internalDir, "version.go")
+	slog.Info("creating file", "path", versionPath)
+	content := `package internal
+
+const Version = "0.0.1"
+`
+	return os.WriteFile(versionPath, []byte(content), 0644)
 }

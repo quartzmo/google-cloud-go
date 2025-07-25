@@ -170,7 +170,7 @@ go_gapic_library(
 	bazelFile.Close()
 
 	// Override dependencies with fakes.
-	postProcess = func(ctx context.Context, req *request.Request, modulePath, outputDir string) error {
+	postProcess = func(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
 		return nil
 	}
 	protocRun = func(ctx context.Context, args []string, dir string) error {
