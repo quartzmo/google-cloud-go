@@ -25,36 +25,33 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 )
 
-// Config holds the configuration extracted from a BUILD.bazel file.
+// Config holds configuration extracted from the Go rules in a googleapis BUILD.bazel file.
+// The fields are from the Go rules in a API version BUILD.bazel file.
+// E.g., googleapis/google/cloud/asset/v1/BUILD.bazel
+// Note that not all fields are present in every Bazel rule usage.
 type Config struct {
-	// The fields below are all from the API version BUILD.bazel file.
-	// E.g., googleapis/google/cloud/asset/v1/BUILD.bazel
-	// Note that not all fields are present in every rule usage.
-	// protoImportPath is importpath in the go_proto_library or go_grpc_library rule.
+	// From the go_proto_library or go_grpc_library rule.
 	protoImportPath string
-	// The remaining fields below are all from the go_gapic_library rule.
+
+	// The fields below are all from the go_gapic_library rule.
 	grpcServiceConfig string
-	// gapicImportPath is importpath in the go_gapic_library rule.
-	gapicImportPath string
-	// Not typically present.
-	metadata bool
-	// releaseLevel is typically one of "beta", "" (same as beta) or "ga".
-	// If "ga", gapic-generator-go does not print a warning in the package docs.
-	releaseLevel string
-	// restNumericEnums is typically true.
-	restNumericEnums bool
-	// serviceYAML is the YAML file in the API version directory in googleapis.
-	// E.g., googleapis/google/cloud/asset/v1/cloudasset_v1.yaml
-	serviceYAML string
-	// transport is typically one of "grpc", "rest" or "grpc+rest".
-	transport string
-	// Not typically present.
-	diregapic bool
-	// Set to true if a go_grpc_library rule is found in the BUILD.bazel file.
+	gapicImportPath   string
+	metadata          bool
+	releaseLevel      string
+	restNumericEnums  bool
+	serviceYAML       string
+	transport         string
+	diregapic         bool
+
+	// Meta configuration
+	// TODO(quartzmo): Remove this field once the googleapis migration from go_proto_library
+	// to go_grpc_library is complete.
 	hasGoGRPC bool
 }
 
-// GAPICImportPath returns the GAPIC import path.
+// GAPICImportPath is importpath in the go_gapic_library rule.
+// The Go package name is typically appended to the end, separated by a `;`.
+// E.g., cloud.google.com/go/asset/apiv1;asset
 func (c *Config) GAPICImportPath() string { return c.gapicImportPath }
 
 // ModulePath returns the module path from the GAPIC import path.
@@ -66,28 +63,40 @@ func (c *Config) ModulePath() string {
 	return c.gapicImportPath
 }
 
-// ServiceYAML returns the service YAML file name.
+// ServiceYAML is the client config file in the API version directory in googleapis.
+// This is a required input to the GAPIC generator.
+// E.g., googleapis/google/cloud/asset/v1/cloudasset_v1.yaml
 func (c *Config) ServiceYAML() string { return c.serviceYAML }
 
-// GRPCServiceConfig returns the gRPC service config file name.
+// GRPCServiceConfig is name of the gRPC service config JSON file.
+// E.g., cloudasset_grpc_service_config.json
 func (c *Config) GRPCServiceConfig() string { return c.grpcServiceConfig }
 
-// Transport returns the transport type.
+// Transport is typically one of "grpc", "rest" or "grpc+rest".
 func (c *Config) Transport() string { return c.transport }
 
-// ReleaseLevel returns the release level.
+// ReleaseLevel is typically one of "beta", "" (same as beta) or "ga".
+// If "ga", gapic-generator-go does not print a warning in the package docs.
 func (c *Config) ReleaseLevel() string { return c.releaseLevel }
 
-// HasMetadata returns true if metadata should be generated.
+// HasMetadata indicates whether a gapic_metadata.json should be generated.
+// This is typically true.
 func (c *Config) HasMetadata() bool { return c.metadata }
 
-// HasDiregapic returns true if diregapic should be enabled.
+// HasDiregapic indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+// This is typically false or not present. Used for the GCE (compute) client.
 func (c *Config) HasDiregapic() bool { return c.diregapic }
 
-// HasRESTNumericEnums returns true if REST numeric enums should be enabled.
+// HasRESTNumericEnums indicates whether the generated Go REST client should support
+// numeric enums. This is typically true.
 func (c *Config) HasRESTNumericEnums() bool { return c.restNumericEnums }
 
-// HasGoGRPC returns true if a go_grpc_library rule was found.
+// HasGoGRPC is meta-configuration that indicates if a go_grpc_library rule is used
+// instead of a go_proto_library in the BUILD.bazel file. This is not part of the
+// BUILD.bazel configuration passed to the GAPIC generator. If true, --go-grpc_out
+// is passed to the protoc command. Will be removed once the googleapis migration
+// from go_proto_library to go_grpc_library is complete and --go-grpc_out is always
+// used. This is trending toward typically true.
 func (c *Config) HasGoGRPC() bool { return c.hasGoGRPC }
 
 // Parse reads a BUILD.bazel file from the given directory and extracts the

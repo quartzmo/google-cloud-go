@@ -92,6 +92,9 @@ This phase focuses on packaging the application in Docker and performing high-le
     *   [x] Create a `build-docker-and-test.sh` script to perform basic validation of the final Docker image.
     *   [x] Create a `run-container-integration-test.sh` script to execute the full, containerized workflow.
     *   [ ] Document the process for publishing the container.
+    *   [ ] Create PR, review and merge into google-cloud-go master.
+    *   [ ] Create automated CI build and test job triggered on changes to Dockerfile (see similar for `internal/postprocessor/Dockerfile`.
+    *   [ ] Publish container image to AR Exit Gate repository.
 
 *   [ ] **11. Manual Integration Testing**
     *   [ ] Execute the manual testing plan as laid out in `design.md` to confirm that the output of the core generation matches the legacy system.
