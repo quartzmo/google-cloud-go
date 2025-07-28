@@ -96,6 +96,23 @@ func (c *Config) HasRESTNumericEnums() bool { return c.restNumericEnums }
 // used. This is trending toward typically true.
 func (c *Config) HasGoGRPC() bool { return c.hasGoGRPC }
 
+// Validate ensures that the configuration is valid.
+func (c *Config) Validate() error {
+	if c.gapicImportPath == "" {
+		return fmt.Errorf("gapicImportPath is not set")
+	}
+	if c.serviceYAML == "" {
+		return fmt.Errorf("serviceYAML is not set")
+	}
+	if c.grpcServiceConfig == "" {
+		return fmt.Errorf("grpcServiceConfig is not set")
+	}
+	if c.transport == "" {
+		return fmt.Errorf("transport is not set")
+	}
+	return nil
+}
+
 // Parse reads a BUILD.bazel file from the given directory and extracts the
 // relevant configuration from the go_gapic_library and go_proto_library rules.
 func Parse(dir string) (*Config, error) {

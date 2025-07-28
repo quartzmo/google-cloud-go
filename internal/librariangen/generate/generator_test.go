@@ -165,6 +165,9 @@ func TestGenerate(t *testing.T) {
 go_gapic_library(
     name = "v1_gapic",
     importpath = "path/to/v1;v1",
+    grpc_service_config = "service_config.json",
+    service_yaml = "service.yaml",
+    transport = "grpc",
 )
 `)
 	bazelFile.Close()

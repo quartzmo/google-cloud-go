@@ -80,17 +80,9 @@ go_gapic_library(
 
 func TestParse_misconfiguration(t *testing.T) {
 	content := `
-go_grpc_library(
-    name = "asset_go_proto",
-    importpath = "cloud.google.com/go/asset/apiv1/assetpb",
-    protos = [":asset_proto"],
-)
+go_grpc_library()
 
-go_proto_library(
-    name = "asset_go_proto_legacy",
-    importpath = "cloud.google.com/go/asset/apiv1/assetpb",
-    protos = [":asset_proto"],
-)
+go_proto_library()
 `
 	tmpDir := t.TempDir()
 	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
@@ -100,5 +92,51 @@ go_proto_library(
 
 	if _, err := Parse(tmpDir); err == nil {
 		t.Error("Parse() succeeded; want error")
+	}
+}
+
+func TestConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "valid",
+			cfg: &Config{
+				gapicImportPath:   "a",
+				serviceYAML:       "b",
+				grpcServiceConfig: "c",
+				transport:         "d",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "missing gapicImportPath",
+			cfg:     &Config{serviceYAML: "b", grpcServiceConfig: "c", transport: "d"},
+			wantErr: true,
+		},
+		{
+			name:    "missing serviceYAML",
+			cfg:     &Config{gapicImportPath: "a", grpcServiceConfig: "c", transport: "d"},
+			wantErr: true,
+		},
+		{
+			name:    "missing grpcServiceConfig",
+			cfg:     &Config{gapicImportPath: "a", serviceYAML: "b", transport: "d"},
+			wantErr: true,
+		},
+		{
+			name:    "missing transport",
+			cfg:     &Config{gapicImportPath: "a", serviceYAML: "b", grpcServiceConfig: "c"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.cfg.Validate(); (err != nil) != tt.wantErr {
+				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }

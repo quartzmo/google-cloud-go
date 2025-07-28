@@ -133,6 +133,9 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to parse BUILD.bazel for %s: %w", apiServiceDir, err)
 		}
+		if err := bazelConfig.Validate(); err != nil {
+			return "", fmt.Errorf("invalid bazel config for %s: %w", apiServiceDir, err)
+		}
 		slog.Info("bazel config loaded", "conf", fmt.Sprintf("%+v", bazelConfig))
 		args, err := protoc.Build(generateReq, &api, apiServiceDir, bazelConfig, cfg.SourceDir, cfg.OutputDir)
 		if err != nil {
