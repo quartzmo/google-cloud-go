@@ -161,10 +161,13 @@ func generateInternalVersionFile(moduleDir string) error {
 // generates a version.go file for each corresponding client directory.
 func generateClientVersionFiles(req *request.Request, moduleDir, moduleName string) error {
 	for _, api := range req.APIs {
-		// E.g. google/cloud/chronicle/v1 -> v1
+		// E.g. google/cloud/chronicle/v1 -> apiv1
 		parts := strings.Split(api.Path, "/")
-		version := parts[len(parts)-1]
-		clientDir := filepath.Join(moduleDir, version)
+		if len(parts) < 2 {
+			return fmt.Errorf("unexpected API path format: %s", api.Path)
+		}
+		clientDirName := "api" + parts[len(parts)-1]
+		clientDir := filepath.Join(moduleDir, clientDirName)
 		if err := generateClientVersionFile(clientDir, moduleName); err != nil {
 			return err
 		}
@@ -186,7 +189,7 @@ func generateClientVersionFile(clientDir, moduleName string) error {
 		ModuleRootInternal string
 	}{
 		Year:               time.Now().Year(),
-		Package:            filepath.Base(clientDir),
+		Package:            moduleName,
 		ModuleRootInternal: "cloud.google.com/go/" + moduleName + "/internal",
 	}
 	f, err := os.Create(versionPath)

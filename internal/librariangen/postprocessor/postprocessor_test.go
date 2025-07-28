@@ -31,6 +31,7 @@ func TestPostProcess(t *testing.T) {
 		mockProtocRun       func(ctx context.Context, args []string, dir string) error
 		wantFilesCreated    []string
 		wantFilesNotCreated []string
+		wantGoModInitCalled bool
 		wantErr             bool
 	}{
 		{
@@ -44,10 +45,11 @@ func TestPostProcess(t *testing.T) {
 				"CHANGES.md",
 				"internal/version.go",
 				"README.md",
-				"v1/version.go",
-				"v2/version.go",
+				"apiv1/version.go",
+				"apiv2/version.go",
 			},
-			wantErr: false,
+			wantGoModInitCalled: true,
+			wantErr:             false,
 		},
 		{
 			name:      "existing module success",
@@ -57,15 +59,16 @@ func TestPostProcess(t *testing.T) {
 			},
 			wantFilesCreated: []string{
 				"README.md",
-				"v1/version.go",
-				"v2/version.go",
+				"apiv1/version.go",
+				"apiv2/version.go",
 			},
 			wantFilesNotCreated: []string{
 				"go.mod",
 				"CHANGES.md",
 				"internal/version.go",
 			},
-			wantErr: false,
+			wantGoModInitCalled: false,
+			wantErr:             false,
 		},
 		{
 			name:      "goimports fails (non-fatal)",
@@ -78,10 +81,11 @@ func TestPostProcess(t *testing.T) {
 			},
 			wantFilesCreated: []string{
 				"README.md",
-				"v1/version.go",
-				"v2/version.go",
+				"apiv1/version.go",
+				"apiv2/version.go",
 			},
-			wantErr: false, // goimports error is logged but not returned
+			wantGoModInitCalled: false,
+			wantErr:             false, // goimports error is logged but not returned
 		},
 		{
 			name:      "go mod init fails (fatal)",
@@ -92,7 +96,8 @@ func TestPostProcess(t *testing.T) {
 				}
 				return nil
 			},
-			wantErr: true,
+			wantGoModInitCalled: true,
+			wantErr:             true,
 		},
 	}
 
@@ -104,7 +109,13 @@ func TestPostProcess(t *testing.T) {
 			}
 			defer os.RemoveAll(tmpDir)
 
-			protocRun = tt.mockProtocRun
+			var goModInitCalled bool
+			protocRun = func(ctx context.Context, args []string, dir string) error {
+				if len(args) > 2 && args[0] == "go" && args[1] == "mod" && args[2] == "init" {
+					goModInitCalled = true
+				}
+				return tt.mockProtocRun(ctx, args, dir)
+			}
 
 			req := &request.Request{
 				ID: "google-cloud-chronicle",
@@ -120,6 +131,10 @@ func TestPostProcess(t *testing.T) {
 
 			if tt.wantErr {
 				return
+			}
+
+			if goModInitCalled != tt.wantGoModInitCalled {
+				t.Errorf("goModInitCalled = %v; want %v", goModInitCalled, tt.wantGoModInitCalled)
 			}
 
 			for _, file := range tt.wantFilesCreated {
