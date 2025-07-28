@@ -32,6 +32,7 @@ func TestPostProcess(t *testing.T) {
 		wantFilesCreated    []string
 		wantFilesNotCreated []string
 		wantGoModInitCalled bool
+		wantGoModTidyCalled bool
 		wantErr             bool
 	}{
 		{
@@ -49,6 +50,7 @@ func TestPostProcess(t *testing.T) {
 				"apiv2/version.go",
 			},
 			wantGoModInitCalled: true,
+			wantGoModTidyCalled: true,
 			wantErr:             false,
 		},
 		{
@@ -68,6 +70,7 @@ func TestPostProcess(t *testing.T) {
 				"internal/version.go",
 			},
 			wantGoModInitCalled: false,
+			wantGoModTidyCalled: true,
 			wantErr:             false,
 		},
 		{
@@ -85,6 +88,7 @@ func TestPostProcess(t *testing.T) {
 				"apiv2/version.go",
 			},
 			wantGoModInitCalled: false,
+			wantGoModTidyCalled: true,
 			wantErr:             false, // goimports error is logged but not returned
 		},
 		{
@@ -97,6 +101,20 @@ func TestPostProcess(t *testing.T) {
 				return nil
 			},
 			wantGoModInitCalled: true,
+			wantGoModTidyCalled: false,
+			wantErr:             true,
+		},
+		{
+			name:      "go mod tidy fails (fatal)",
+			newModule: false,
+			mockProtocRun: func(ctx context.Context, args []string, dir string) error {
+				if args[0] == "go" && args[1] == "mod" && args[2] == "tidy" {
+					return errors.New("go mod tidy failed")
+				}
+				return nil
+			},
+			wantGoModInitCalled: false,
+			wantGoModTidyCalled: true,
 			wantErr:             true,
 		},
 	}
@@ -109,10 +127,13 @@ func TestPostProcess(t *testing.T) {
 			}
 			defer os.RemoveAll(tmpDir)
 
-			var goModInitCalled bool
+			var goModInitCalled, goModTidyCalled bool
 			protocRun = func(ctx context.Context, args []string, dir string) error {
 				if len(args) > 2 && args[0] == "go" && args[1] == "mod" && args[2] == "init" {
 					goModInitCalled = true
+				}
+				if len(args) > 2 && args[0] == "go" && args[1] == "mod" && args[2] == "tidy" {
+					goModTidyCalled = true
 				}
 				return tt.mockProtocRun(ctx, args, dir)
 			}
@@ -135,6 +156,9 @@ func TestPostProcess(t *testing.T) {
 
 			if goModInitCalled != tt.wantGoModInitCalled {
 				t.Errorf("goModInitCalled = %v; want %v", goModInitCalled, tt.wantGoModInitCalled)
+			}
+			if goModTidyCalled != tt.wantGoModTidyCalled {
+				t.Errorf("goModTidyCalled = %v; want %v", goModTidyCalled, tt.wantGoModTidyCalled)
 			}
 
 			for _, file := range tt.wantFilesCreated {
