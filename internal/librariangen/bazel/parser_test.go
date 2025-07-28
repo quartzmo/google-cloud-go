@@ -22,9 +22,8 @@ import (
 
 func TestParse(t *testing.T) {
 	content := `
-go_proto_library(
+go_grpc_library(
     name = "asset_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:go_grpc"],
     importpath = "cloud.google.com/go/asset/apiv1/assetpb",
     protos = [":asset_proto"],
 )
@@ -39,7 +38,7 @@ go_gapic_library(
     rest_numeric_enums = True,
     service_yaml = "cloudasset_v1.yaml",
     transport = "grpc+rest",
-    diregapic = True,
+    diregapic = False,
 )
 `
 	tmpDir := t.TempDir()
@@ -71,10 +70,35 @@ go_gapic_library(
 	if !got.HasMetadata() {
 		t.Error("HasMetadata() = false; want true")
 	}
-	if !got.HasDiregapic() {
-		t.Error("HasDiregapic() = false; want true")
+	if got.HasDiregapic() {
+		t.Error("HasDiregapic() = true; want false")
 	}
 	if !got.HasRESTNumericEnums() {
 		t.Error("HasRESTNumericEnums() = false; want true")
+	}
+}
+
+func TestParse_misconfiguration(t *testing.T) {
+	content := `
+go_grpc_library(
+    name = "asset_go_proto",
+    importpath = "cloud.google.com/go/asset/apiv1/assetpb",
+    protos = [":asset_proto"],
+)
+
+go_proto_library(
+    name = "asset_go_proto_legacy",
+    importpath = "cloud.google.com/go/asset/apiv1/assetpb",
+    protos = [":asset_proto"],
+)
+`
+	tmpDir := t.TempDir()
+	buildPath := filepath.Join(tmpDir, "BUILD.bazel")
+	if err := os.WriteFile(buildPath, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	if _, err := Parse(tmpDir); err == nil {
+		t.Error("Parse() succeeded; want error")
 	}
 }

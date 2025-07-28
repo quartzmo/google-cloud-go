@@ -30,9 +30,6 @@ import (
 // E.g., googleapis/google/cloud/asset/v1/BUILD.bazel
 // Note that not all fields are present in every Bazel rule usage.
 type Config struct {
-	// From the go_proto_library or go_grpc_library rule.
-	protoImportPath string
-
 	// The fields below are all from the go_gapic_library rule.
 	grpcServiceConfig string
 	gapicImportPath   string
@@ -153,17 +150,14 @@ func Parse(dir string) (*Config, error) {
 		}
 	}
 
-	// We are currently migrating go_proto_library to go_grpc_library, so check
-	// both for now.
-	for _, rule := range f.Rules("go_proto_library") {
-		if v := rule.AttrString("importpath"); v != "" {
-			c.protoImportPath = v
-		}
+	// We are currently migrating go_proto_library to go_grpc_library.
+	// Only one is expect to be present
+	for range f.Rules("go_grpc_library") {
+		c.hasGoGRPC = true
 	}
-	for _, rule := range f.Rules("go_grpc_library") {
-		if v := rule.AttrString("importpath"); v != "" {
-			c.protoImportPath = v
-			c.hasGoGRPC = true
+	for range f.Rules("go_proto_library") {
+		if c.hasGoGRPC {
+			return nil, fmt.Errorf("misconfiguration in BUILD.bazel file, only one of go_grpc_library and go_proto_library rules should be present: %s", fp)
 		}
 	}
 	return c, nil
