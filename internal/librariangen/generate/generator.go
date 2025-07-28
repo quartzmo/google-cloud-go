@@ -29,6 +29,7 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
+// Test substitution vars.
 var (
 	postProcess  = postprocessor.PostProcess
 	bazelParse   = bazel.Parse
@@ -36,12 +37,21 @@ var (
 	requestParse = request.Parse
 )
 
-// Config holds the configuration for the generate command.
+// Config holds the internal librariangen configuration for the generate command.
 type Config struct {
-	LibrarianDir        string
-	InputDir            string
-	OutputDir           string
-	SourceDir           string
+	// LibrarianDir is the path to the librarian-tool input directory.
+	// It is expected to contain the generate-request.json file.
+	LibrarianDir string
+	// InputDir is the path to the .librarian/generator-input directory from the
+	// language repository.
+	InputDir string
+	// OutputDir is the path to the empty directory where librariangen writes
+	// its output.
+	OutputDir string
+	// SourceDir is the path to a complete checkout of the googleapis repository.
+	SourceDir string
+	// EnablePostProcessor controls whether the post-processor is run.
+	// This should always be true in production.
 	EnablePostProcessor bool
 }
 
@@ -62,9 +72,22 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Generate handles the logic for the 'generate' CLI command.
-// It reads a request file, and for each API specified, it invokes protoc
-// to generate the client library.
+// Generate is the main entrypoint for the `generate` command. It orchestrates
+// the entire generation process. The high-level steps are:
+//
+//  1. Validate the configuration.
+//  2. Invoke `protoc` for each API specified in the request, generating Go
+//     files into a nested directory structure (e.g.,
+//     `/output/cloud.google.com/go/...`).
+//  3. Fix the permissions of all generated `.go` files to `0644`.
+//  4. Flatten the output directory, moving the generated module(s) to the top
+//     level of the output directory (e.g., `/output/chronicle`).
+//  5. If the `EnablePostProcessor` flag is true, run the post-processor on the
+//     generated module(s) to add module files (`go.mod`, `README.md`, etc.).
+//
+// The `EnablePostProcessor` flag should always be true in production. It can be
+// disabled during development to inspect the "raw" protoc output before any
+// post-processing is applied.
 func Generate(ctx context.Context, cfg *Config) error {
 	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
