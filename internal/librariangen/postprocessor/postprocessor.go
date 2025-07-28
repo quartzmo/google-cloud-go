@@ -44,8 +44,18 @@ var (
 	protocRun = protoc.Run
 )
 
-// PostProcess is the entrypoint for post-processing generated files.
-// It runs formatters and other tools to ensure code quality.
+// PostProcess is the entrypoint for post-processing generated files. It runs
+// formatters and other tools to ensure code quality. The high-level steps are:
+//
+//  1. Run `goimports` to format the code.
+//  2. If `newModule` is true, perform one-time initialization for a new module:
+//     a. Run `go mod init`.
+//     b. Generate a placeholder `CHANGES.md`.
+//     c. Generate a module-level `internal/version.go`.
+//  3. Generate a client-level `version.go` for each API version specified in
+//     the request.
+//  4. Generate a `README.md`.
+//  5. Run `go mod tidy` to clean up the `go.mod` file.
 func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
 	slog.Info("starting post-processing", "directory", moduleDir, "new_module", newModule)
 
