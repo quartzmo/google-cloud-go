@@ -23,13 +23,20 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/protoc"
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
-//go:embed _README.md.txt
-var readmeTmpl string
+var (
+	//go:embed _README.md.txt
+	readmeTmpl string
+	//go:embed _version.go.txt
+	versionTmpl string
+	//go:embed _internal_version.go.txt
+	internalVersionTmpl string
+)
 
 // PostProcess is the entrypoint for post-processing generated files.
 // It runs formatters and other tools to ensure code quality.
@@ -62,6 +69,10 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 		if err := generateInternalVersionFile(moduleDir); err != nil {
 			return fmt.Errorf("failed to generate internal/version.go: %w", err)
 		}
+	}
+
+	if err := generateClientVersionFiles(req, moduleDir, moduleName); err != nil {
+		return fmt.Errorf("failed to generate client version files: %w", err)
 	}
 
 	// The README should be updated on every run.
@@ -126,9 +137,56 @@ func generateInternalVersionFile(moduleDir string) error {
 	}
 	versionPath := filepath.Join(internalDir, "version.go")
 	slog.Info("creating file", "path", versionPath)
-	content := `package internal
+	t := template.Must(template.New("internal_version").Parse(internalVersionTmpl))
+	internalVersionData := struct {
+		Year int
+	}{
+		Year: time.Now().Year(),
+	}
+	f, err := os.Create(versionPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return t.Execute(f, internalVersionData)
+}
 
-const Version = "0.0.1"
-`
-	return os.WriteFile(versionPath, []byte(content), 0644)
+// generateClientVersionFiles iterates through the APIs in the request and
+// generates a version.go file for each corresponding client directory.
+func generateClientVersionFiles(req *request.Request, moduleDir, moduleName string) error {
+	for _, api := range req.APIs {
+		// E.g. google/cloud/chronicle/v1 -> v1
+		parts := strings.Split(api.Path, "/")
+		version := parts[len(parts)-1]
+		clientDir := filepath.Join(moduleDir, version)
+		if err := generateClientVersionFile(clientDir, moduleName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// generateClientVersionFile creates a version.go file for a client.
+func generateClientVersionFile(clientDir, moduleName string) error {
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		return err
+	}
+	versionPath := filepath.Join(clientDir, "version.go")
+	slog.Info("creating file", "path", versionPath)
+	t := template.Must(template.New("version").Parse(versionTmpl))
+	versionData := struct {
+		Year               int
+		Package            string
+		ModuleRootInternal string
+	}{
+		Year:               time.Now().Year(),
+		Package:            filepath.Base(clientDir),
+		ModuleRootInternal: "cloud.google.com/go/" + moduleName + "/internal",
+	}
+	f, err := os.Create(versionPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return t.Execute(f, versionData)
 }
