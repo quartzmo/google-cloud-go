@@ -5,116 +5,119 @@ protoc-gen-go: protoc-gen-go v1.35.2
 protoc-gen-go-grpc: protoc-gen-go-grpc 1.3.0
 protoc-gen-go_gapic: v0.53.1
 ---------------------
-2025/07/28 17:16:49 INFO librariangen invoked args="[./librariangen --source=/Users/chrisdsmith/oss/googleapis --librarian=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian --output=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --enable-post-processor generate]"
-2025/07/28 17:16:49 INFO generate command started
-2025/07/28 17:16:49 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian/generate-request.json
-2025/07/28 17:16:49 INFO successfully unmarshalled request library_id=google-cloud-chronicle
-2025/07/28 17:16:49 INFO processing api service_dir=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1
-2025/07/28 17:16:49 INFO bazel config loaded conf="&{grpcServiceConfig:chronicle_v1_grpc_service_config.json gapicImportPath:cloud.google.com/go/chronicle/apiv1;chronicle metadata:true releaseLevel:beta restNumericEnums:true serviceYAML:chronicle_v1.yaml transport:grpc+rest diregapic:false hasGoGRPC:true}"
-2025/07/28 17:16:49 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go-grpc_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go_gapic_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/chronicle/apiv1;chronicle --go_gapic_opt=api-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1.yaml --go_gapic_opt=grpc-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums -I=/Users/chrisdsmith/oss/googleapis /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/data_access_control.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/entity.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/instance.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/reference_list.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/rule.proto" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
-2025/07/28 17:16:49 INFO fixing file permissions dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/auxiliary.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/auxiliary_go123.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/data_access_control.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/data_access_control_grpc.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/entity.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/entity_grpc.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/instance.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/instance_grpc.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/reference_list.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/reference_list_grpc.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/rule.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/rule_grpc.pb.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client_example_go123_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client_example_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/doc.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client_example_go123_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client_example_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/helpers.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client_example_go123_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client_example_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client_example_go123_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client_example_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client_example_go123_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client_example_test.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CancelOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CreateDataAccessLabel/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CreateDataAccessScope/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteDataAccessLabel/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteDataAccessScope/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetDataAccessLabel/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetDataAccessScope/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListDataAccessLabels/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListDataAccessScopes/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListOperations/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/UpdateDataAccessLabel/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/UpdateDataAccessScope/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/CancelOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/CreateWatchlist/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/DeleteOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/DeleteWatchlist/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/GetOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/GetWatchlist/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/ListOperations/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/ListWatchlists/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/UpdateWatchlist/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/CancelOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/DeleteOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/GetInstance/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/GetOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/ListOperations/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/CancelOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/CreateReferenceList/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/DeleteOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/GetOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/GetReferenceList/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/ListOperations/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/ListReferenceLists/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/UpdateReferenceList/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CancelOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CreateRetrohunt/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CreateRule/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/DeleteOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/DeleteRule/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetOperation/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRetrohunt/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRule/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRuleDeployment/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListOperations/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRetrohunts/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRuleDeployments/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRuleRevisions/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRules/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/UpdateRule/main.go
-2025/07/28 17:16:49 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/UpdateRuleDeployment/main.go
-2025/07/28 17:16:49 INFO flattening output directory dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
-2025/07/28 17:16:49 INFO moving file from=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle to=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
-2025/07/28 17:16:49 INFO moving file from=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal to=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/internal
-2025/07/28 17:16:49 INFO using module path from final API importpath=cloud.google.com/go/chronicle/apiv1
-2025/07/28 17:16:49 INFO post-processor enabled
-2025/07/28 17:16:49 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian/generate-request.json
-2025/07/28 17:16:49 INFO successfully unmarshalled request library_id=google-cloud-chronicle
-2025/07/28 17:16:49 INFO starting post-processing directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle new_module=true
-2025/07/28 17:16:49 INFO running goimports directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
-2025/07/28 17:16:49 INFO running command command="goimports -w ." dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
-2025/07/28 17:16:49 INFO initializing new module
-2025/07/28 17:16:49 INFO running go mod init directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle modulePath=cloud.google.com/go/chronicle
-2025/07/28 17:16:49 INFO running command command="go mod init cloud.google.com/go/chronicle" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
-2025/07/28 17:16:49 INFO command output output="go: creating new go.mod: module cloud.google.com/go/chronicle\ngo: to add module requirements and sums:\n\tgo mod tidy\n"
-2025/07/28 17:16:49 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/CHANGES.md
-2025/07/28 17:16:49 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/internal/version.go
-2025/07/28 17:16:49 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/apiv1/version.go
-2025/07/28 17:16:49 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/README.md
-2025/07/28 17:16:49 INFO post-processing finished successfully
-2025/07/28 17:16:49 INFO generate command finished
-2025/07/28 17:16:49 INFO librariangen finished successfully
+2025/07/28 17:25:57 INFO librariangen invoked args="[./librariangen --source=/Users/chrisdsmith/oss/googleapis --librarian=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian --output=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --enable-post-processor generate]"
+2025/07/28 17:25:57 INFO generate command started
+2025/07/28 17:25:57 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian/generate-request.json
+2025/07/28 17:25:57 INFO successfully unmarshalled request library_id=google-cloud-chronicle
+2025/07/28 17:25:57 INFO processing api service_dir=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1
+2025/07/28 17:25:57 INFO bazel config loaded conf="&{grpcServiceConfig:chronicle_v1_grpc_service_config.json gapicImportPath:cloud.google.com/go/chronicle/apiv1;chronicle metadata:true releaseLevel:beta restNumericEnums:true serviceYAML:chronicle_v1.yaml transport:grpc+rest diregapic:false hasGoGRPC:true}"
+2025/07/28 17:25:57 INFO running command command="protoc --experimental_allow_proto3_optional --go_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go-grpc_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go_gapic_out=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output --go_gapic_opt=go-gapic-package=cloud.google.com/go/chronicle/apiv1;chronicle --go_gapic_opt=api-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1.yaml --go_gapic_opt=grpc-service-config=/Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/chronicle_v1_grpc_service_config.json --go_gapic_opt=transport=grpc+rest --go_gapic_opt=release-level=beta --go_gapic_opt=metadata --go_gapic_opt=rest-numeric-enums -I=/Users/chrisdsmith/oss/googleapis /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/data_access_control.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/entity.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/instance.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/reference_list.proto /Users/chrisdsmith/oss/googleapis/google/cloud/chronicle/v1/rule.proto" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
+2025/07/28 17:25:57 INFO fixing file permissions dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/auxiliary.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/auxiliary_go123.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/data_access_control.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/data_access_control_grpc.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/entity.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/entity_grpc.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/instance.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/instance_grpc.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/reference_list.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/reference_list_grpc.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/rule.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/chroniclepb/rule_grpc.pb.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client_example_go123_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/data_access_control_client_example_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/doc.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client_example_go123_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/entity_client_example_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/helpers.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client_example_go123_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/instance_client_example_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client_example_go123_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/reference_list_client_example_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client_example_go123_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle/apiv1/rule_client_example_test.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CancelOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CreateDataAccessLabel/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/CreateDataAccessScope/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteDataAccessLabel/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteDataAccessScope/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/DeleteOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetDataAccessLabel/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetDataAccessScope/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/GetOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListDataAccessLabels/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListDataAccessScopes/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/ListOperations/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/UpdateDataAccessLabel/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/DataAccessControlClient/UpdateDataAccessScope/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/CancelOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/CreateWatchlist/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/DeleteOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/DeleteWatchlist/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/GetOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/GetWatchlist/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/ListOperations/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/ListWatchlists/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/EntityClient/UpdateWatchlist/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/CancelOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/DeleteOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/GetInstance/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/GetOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/InstanceClient/ListOperations/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/CancelOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/CreateReferenceList/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/DeleteOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/GetOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/GetReferenceList/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/ListOperations/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/ListReferenceLists/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/ReferenceListClient/UpdateReferenceList/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CancelOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CreateRetrohunt/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/CreateRule/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/DeleteOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/DeleteRule/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetOperation/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRetrohunt/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRule/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/GetRuleDeployment/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListOperations/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRetrohunts/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRuleDeployments/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRuleRevisions/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/ListRules/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/UpdateRule/main.go
+2025/07/28 17:25:57 INFO fixing file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal/generated/snippets/chronicle/apiv1/RuleClient/UpdateRuleDeployment/main.go
+2025/07/28 17:25:57 INFO flattening output directory dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output
+2025/07/28 17:25:57 INFO moving file from=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/chronicle to=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:25:57 INFO moving file from=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/cloud.google.com/go/internal to=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/internal
+2025/07/28 17:25:57 INFO using module path from final API importpath=cloud.google.com/go/chronicle/apiv1
+2025/07/28 17:25:57 INFO post-processor enabled
+2025/07/28 17:25:57 INFO reading generate request path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/librarian/generate-request.json
+2025/07/28 17:25:57 INFO successfully unmarshalled request library_id=google-cloud-chronicle
+2025/07/28 17:25:57 INFO starting post-processing directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle new_module=true
+2025/07/28 17:25:57 INFO running goimports directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:25:57 INFO running command command="goimports -w ." dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:25:58 INFO initializing new module
+2025/07/28 17:25:58 INFO running go mod init directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle modulePath=cloud.google.com/go/chronicle
+2025/07/28 17:25:58 INFO running command command="go mod init cloud.google.com/go/chronicle" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:25:58 INFO command output output="go: creating new go.mod: module cloud.google.com/go/chronicle\ngo: to add module requirements and sums:\n\tgo mod tidy\n"
+2025/07/28 17:25:58 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/CHANGES.md
+2025/07/28 17:25:58 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/internal/version.go
+2025/07/28 17:25:58 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/apiv1/version.go
+2025/07/28 17:25:58 INFO creating file path=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle/README.md
+2025/07/28 17:25:58 INFO running go mod tidy directory=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:25:58 INFO running command command="go mod tidy" dir=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out/output/chronicle
+2025/07/28 17:26:01 INFO command output output="go: finding module for package google.golang.org/api/transport/grpc\ngo: finding module for package google.golang.org/api/iterator\ngo: finding module for package github.com/googleapis/gax-go/v2\ngo: finding module for package cloud.google.com/go/longrunning/autogen\ngo: finding module for package github.com/googleapis/gax-go/v2/iterator\ngo: finding module for package google.golang.org/api/option\ngo: finding module for package github.com/googleapis/gax-go/v2/internallog\ngo: finding module for package github.com/googleapis/gax-go/v2/internallog/grpclog\ngo: finding module for package google.golang.org/api/googleapi\ngo: finding module for package google.golang.org/api/option/internaloption\ngo: finding module for package cloud.google.com/go/longrunning\ngo: finding module for package cloud.google.com/go/longrunning/autogen/longrunningpb\ngo: finding module for package google.golang.org/api/transport/http\ngo: finding module for package google.golang.org/grpc\ngo: finding module for package google.golang.org/grpc/codes\ngo: finding module for package google.golang.org/protobuf/encoding/protojson\ngo: finding module for package google.golang.org/protobuf/proto\ngo: finding module for package google.golang.org/protobuf/runtime/protoimpl\ngo: finding module for package google.golang.org/genproto/googleapis/type/interval\ngo: finding module for package google.golang.org/grpc/status\ngo: finding module for package google.golang.org/genproto/googleapis/api/annotations\ngo: finding module for package google.golang.org/protobuf/reflect/protoreflect\ngo: finding module for package google.golang.org/protobuf/types/known/emptypb\ngo: finding module for package google.golang.org/protobuf/types/known/fieldmaskpb\ngo: finding module for package google.golang.org/protobuf/types/known/timestamppb\ngo: downloading google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0\ngo: downloading google.golang.org/genproto v0.0.0-20250728155136-f173205681a0\ngo: found cloud.google.com/go/longrunning in cloud.google.com/go/longrunning v0.6.7\ngo: found cloud.google.com/go/longrunning/autogen in cloud.google.com/go/longrunning v0.6.7\ngo: found cloud.google.com/go/longrunning/autogen/longrunningpb in cloud.google.com/go/longrunning v0.6.7\ngo: found github.com/googleapis/gax-go/v2 in github.com/googleapis/gax-go/v2 v2.15.0\ngo: found github.com/googleapis/gax-go/v2/internallog in github.com/googleapis/gax-go/v2 v2.15.0\ngo: found github.com/googleapis/gax-go/v2/internallog/grpclog in github.com/googleapis/gax-go/v2 v2.15.0\ngo: found github.com/googleapis/gax-go/v2/iterator in github.com/googleapis/gax-go/v2 v2.15.0\ngo: found google.golang.org/api/googleapi in google.golang.org/api v0.243.0\ngo: found google.golang.org/api/iterator in google.golang.org/api v0.243.0\ngo: found google.golang.org/api/option in google.golang.org/api v0.243.0\ngo: found google.golang.org/api/option/internaloption in google.golang.org/api v0.243.0\ngo: found google.golang.org/api/transport/grpc in google.golang.org/api v0.243.0\ngo: found google.golang.org/api/transport/http in google.golang.org/api v0.243.0\ngo: found google.golang.org/grpc in google.golang.org/grpc v1.74.2\ngo: found google.golang.org/grpc/codes in google.golang.org/grpc v1.74.2\ngo: found google.golang.org/protobuf/encoding/protojson in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/protobuf/proto in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/protobuf/runtime/protoimpl in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/genproto/googleapis/api/annotations in google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0\ngo: found google.golang.org/genproto/googleapis/type/interval in google.golang.org/genproto v0.0.0-20250728155136-f173205681a0\ngo: found google.golang.org/grpc/status in google.golang.org/grpc v1.74.2\ngo: found google.golang.org/protobuf/reflect/protoreflect in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/protobuf/types/known/emptypb in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/protobuf/types/known/fieldmaskpb in google.golang.org/protobuf v1.36.6\ngo: found google.golang.org/protobuf/types/known/timestamppb in google.golang.org/protobuf v1.36.6\ngo: downloading google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074\n"
+2025/07/28 17:26:01 INFO post-processing finished successfully
+2025/07/28 17:26:01 INFO generate command finished
+2025/07/28 17:26:01 INFO librariangen finished successfully
 --- Git Reset Summary ---
 HEAD is now at 7ce88633f9 chore(main): release storage 1.56.0 (#12394)
 --- Git Status Summary ---
@@ -135,56 +138,79 @@ Changes to be committed:
 	modified:   chronicle/apiv1/chroniclepb/rule.pb.go
 	modified:   chronicle/apiv1/chroniclepb/rule_grpc.pb.go
 	modified:   chronicle/go.mod
-	deleted:    chronicle/go.sum
+	modified:   chronicle/go.sum
 	modified:   chronicle/internal/version.go
 
 
 --- Diff for chronicle/go.mod ---
 diff --git a/chronicle/go.mod b/chronicle/go.mod
-index 612a62e4c5..17e6366bc6 100644
+index 612a62e4c5..9ff61ba224 100644
 --- a/chronicle/go.mod
 +++ b/chronicle/go.mod
-@@ -1,39 +1,3 @@
+@@ -1,19 +1,19 @@
  module cloud.google.com/go/chronicle
  
 -go 1.23.0
--
--require (
--	cloud.google.com/go/longrunning v0.6.7
--	github.com/googleapis/gax-go/v2 v2.15.0
--	google.golang.org/api v0.243.0
++go 1.24.4
+ 
+ require (
+ 	cloud.google.com/go/longrunning v0.6.7
+ 	github.com/googleapis/gax-go/v2 v2.15.0
+ 	google.golang.org/api v0.243.0
 -	google.golang.org/genproto v0.0.0-20250603155806-513f23925822
 -	google.golang.org/genproto/googleapis/api v0.0.0-20250721164621-a45f3dfb1074
--	google.golang.org/grpc v1.74.2
--	google.golang.org/protobuf v1.36.6
--)
--
--require (
++	google.golang.org/genproto v0.0.0-20250728155136-f173205681a0
++	google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0
+ 	google.golang.org/grpc v1.74.2
+ 	google.golang.org/protobuf v1.36.6
+ )
+ 
+ require (
 -	cloud.google.com/go v0.120.1 // indirect
--	cloud.google.com/go/auth v0.16.3 // indirect
--	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
--	cloud.google.com/go/compute/metadata v0.7.0 // indirect
--	github.com/felixge/httpsnoop v1.0.4 // indirect
--	github.com/go-logr/logr v1.4.3 // indirect
--	github.com/go-logr/stdr v1.2.2 // indirect
--	github.com/google/s2a-go v0.1.9 // indirect
--	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
--	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
--	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
--	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
--	go.opentelemetry.io/otel v1.36.0 // indirect
--	go.opentelemetry.io/otel/metric v1.36.0 // indirect
--	go.opentelemetry.io/otel/trace v1.36.0 // indirect
--	golang.org/x/crypto v0.40.0 // indirect
--	golang.org/x/net v0.42.0 // indirect
--	golang.org/x/oauth2 v0.30.0 // indirect
--	golang.org/x/sync v0.16.0 // indirect
--	golang.org/x/sys v0.34.0 // indirect
--	golang.org/x/text v0.27.0 // indirect
--	golang.org/x/time v0.12.0 // indirect
++	cloud.google.com/go v0.120.0 // indirect
+ 	cloud.google.com/go/auth v0.16.3 // indirect
+ 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
+ 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
+@@ -35,5 +35,5 @@ require (
+ 	golang.org/x/sys v0.34.0 // indirect
+ 	golang.org/x/text v0.27.0 // indirect
+ 	golang.org/x/time v0.12.0 // indirect
 -	google.golang.org/genproto/googleapis/rpc v0.0.0-20250715232539-7130f93afb79 // indirect
--)
-+go 1.24.4
++	google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 // indirect
+ )
+
+--- Diff for chronicle/go.sum ---
+diff --git a/chronicle/go.sum b/chronicle/go.sum
+index b73656ebd1..c9adda91af 100644
+--- a/chronicle/go.sum
++++ b/chronicle/go.sum
+@@ -1,5 +1,5 @@
+-cloud.google.com/go v0.120.1 h1:Z+5V7yd383+9617XDCyszmK5E4wJRJL+tquMfDj9hLM=
+-cloud.google.com/go v0.120.1/go.mod h1:56Vs7sf/i2jYM6ZL9NYlC82r04PThNcPS5YgFmb0rp8=
++cloud.google.com/go v0.120.0 h1:wc6bgG9DHyKqF5/vQvX1CiZrtHnxJjBlKUyF9nP6meA=
++cloud.google.com/go v0.120.0/go.mod h1:/beW32s8/pGRuj4IILWQNd4uuebeT4dkOhKmkfit64Q=
+ cloud.google.com/go/auth v0.16.3 h1:kabzoQ9/bobUmnseYnBO6qQG7q4a/CffFRlJSxv2wCc=
+ cloud.google.com/go/auth v0.16.3/go.mod h1:NucRGjaXfzP1ltpcQ7On/VTZ0H4kWB5Jy+Y9Dnm76fA=
+ cloud.google.com/go/auth/oauth2adapt v0.2.8 h1:keo8NaayQZ6wimpNSmW5OPc283g65QNIiLpZnkHRbnc=
+@@ -65,12 +65,12 @@ golang.org/x/time v0.12.0 h1:ScB/8o8olJvc+CQPWrK3fPZNfh7qgwCrY0zJmoEQLSE=
+ golang.org/x/time v0.12.0/go.mod h1:CDIdPxbZBQxdj6cxyCIdrNogrJKMJ7pr37NYpMcMDSg=
+ google.golang.org/api v0.243.0 h1:sw+ESIJ4BVnlJcWu9S+p2Z6Qq1PjG77T8IJ1xtp4jZQ=
+ google.golang.org/api v0.243.0/go.mod h1:GE4QtYfaybx1KmeHMdBnNnyLzBZCVihGBXAmJu/uUr8=
+-google.golang.org/genproto v0.0.0-20250603155806-513f23925822 h1:rHWScKit0gvAPuOnu87KpaYtjK5zBMLcULh7gxkCXu4=
+-google.golang.org/genproto v0.0.0-20250603155806-513f23925822/go.mod h1:HubltRL7rMh0LfnQPkMH4NPDFEWp0jw3vixw7jEM53s=
+-google.golang.org/genproto/googleapis/api v0.0.0-20250721164621-a45f3dfb1074 h1:mVXdvnmR3S3BQOqHECm9NGMjYiRtEvDYcqAqedTXY6s=
+-google.golang.org/genproto/googleapis/api v0.0.0-20250721164621-a45f3dfb1074/go.mod h1:vYFwMYFbmA8vl6Z/krj/h7+U/AqpHknwJX4Uqgfyc7I=
+-google.golang.org/genproto/googleapis/rpc v0.0.0-20250715232539-7130f93afb79 h1:1ZwqphdOdWYXsUHgMpU/101nCtf/kSp9hOrcvFsnl10=
+-google.golang.org/genproto/googleapis/rpc v0.0.0-20250715232539-7130f93afb79/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
++google.golang.org/genproto v0.0.0-20250728155136-f173205681a0 h1:btBcgujH2+KIWEfz0s7Cdtt9R7hpwM4SAEXAdXf/ddw=
++google.golang.org/genproto v0.0.0-20250728155136-f173205681a0/go.mod h1:Q4yZQ3kmmIyg6HsMjCGx2vQ8gzN+dntaPmFWz6Zj0fo=
++google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0 h1:0UOBWO4dC+e51ui0NFKSPbkHHiQ4TmrEfEZMLDyRmY8=
++google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0/go.mod h1:8ytArBbtOy2xfht+y2fqKd5DRDJRUQhqbyEnQ4bDChs=
++google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074 h1:qJW29YvkiJmXOYMu5Tf8lyrTp3dOS+K4z6IixtLaCf8=
++google.golang.org/genproto/googleapis/rpc v0.0.0-20250721164621-a45f3dfb1074/go.mod h1:qQ0YXyHHx3XkvlzUtpXDkS29lDSafHMZBAZDc03LQ3A=
+ google.golang.org/grpc v1.74.2 h1:WoosgB65DlWVC9FqI82dGsZhWFNBSLjQ84bjROOpMu4=
+ google.golang.org/grpc v1.74.2/go.mod h1:CtQ+BGjaAIXHs/5YS3i473GqwBBa1zGQNevxdeBEXrM=
+ google.golang.org/protobuf v1.36.6 h1:z1NpPI8ku2WgiWnf+t9wTPsn6eP1L7ksHUlkfLvd9xY=
 
 --- Diff for chronicle/README.md ---
 

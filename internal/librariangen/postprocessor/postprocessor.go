@@ -86,6 +86,10 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 		return fmt.Errorf("failed to generate README.md: %w", err)
 	}
 
+	if err := goModTidy(ctx, moduleDir); err != nil {
+		return fmt.Errorf("failed to run 'go mod tidy': %w", err)
+	}
+
 	slog.Info("post-processing finished successfully")
 	return nil
 }
@@ -104,6 +108,13 @@ func goimports(ctx context.Context, dir string) error {
 func goModInit(ctx context.Context, modulePath, dir string) error {
 	slog.Info("running go mod init", "directory", dir, "modulePath", modulePath)
 	args := []string{"go", "mod", "init", modulePath}
+	return protocRun(ctx, args, dir)
+}
+
+// goModTidy tidies the go.mod file, adding missing and removing unused dependencies.
+func goModTidy(ctx context.Context, dir string) error {
+	slog.Info("running go mod tidy", "directory", dir)
+	args := []string{"go", "mod", "tidy"}
 	return protocRun(ctx, args, dir)
 }
 
