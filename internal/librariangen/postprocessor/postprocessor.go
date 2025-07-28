@@ -29,6 +29,7 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
+// External string template vars.
 var (
 	//go:embed _README.md.txt
 	readmeTmpl string
@@ -36,6 +37,11 @@ var (
 	versionTmpl string
 	//go:embed _internal_version.go.txt
 	internalVersionTmpl string
+)
+
+// Test substitution vars.
+var (
+	protocRun = protoc.Run
 )
 
 // PostProcess is the entrypoint for post-processing generated files.
@@ -91,14 +97,14 @@ func goimports(ctx context.Context, dir string) error {
 	// The `.` argument will make goimports process all go files in the directory
 	// and its subdirectories. The -w flag writes results back to source files.
 	args := []string{"goimports", "-w", "."}
-	return protoc.Run(ctx, args, dir)
+	return protocRun(ctx, args, dir)
 }
 
 // goModInit initializes a go.mod file in the given directory.
 func goModInit(ctx context.Context, modulePath, dir string) error {
 	slog.Info("running go mod init", "directory", dir, "modulePath", modulePath)
 	args := []string{"go", "mod", "init", modulePath}
-	return protoc.Run(ctx, args, dir)
+	return protocRun(ctx, args, dir)
 }
 
 // generateReadme creates a README.md file for a new module.
