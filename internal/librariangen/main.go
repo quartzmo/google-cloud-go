@@ -99,7 +99,7 @@ func handleGenerate(ctx context.Context, args []string) error {
 	generateFlags.StringVar(&cfg.InputDir, "input", "/input", "Path to the .librarian/generator-input directory from the language repository.")
 	generateFlags.StringVar(&cfg.OutputDir, "output", "/output", "Path to the empty directory where librariangen writes its output.")
 	generateFlags.StringVar(&cfg.SourceDir, "source", "/source", "Path to a complete checkout of the googleapis repository.")
-	generateFlags.BoolVar(&cfg.EnablePostProcessor, "enable-post-processor", false, "Enable the post-processor.")
+	generateFlags.BoolVar(&cfg.EnablePostProcessor, "enable-post-processor", false, "Enable the post-processor. This should always be true in production.")
 	if err := generateFlags.Parse(args); err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}

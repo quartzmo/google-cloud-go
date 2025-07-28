@@ -16,13 +16,175 @@ package generate
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
+
+// testEnv encapsulates a temporary test environment.
+type testEnv struct {
+	tmpDir       string
+	librarianDir string
+	sourceDir    string
+	outputDir    string
+}
+
+// newTestEnv creates a new test environment.
+func newTestEnv(t *testing.T) *testEnv {
+	t.Helper()
+	tmpDir, err := os.MkdirTemp("", "generator-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	e := &testEnv{tmpDir: tmpDir}
+	e.librarianDir = filepath.Join(tmpDir, "librarian")
+	e.sourceDir = filepath.Join(tmpDir, "source")
+	e.outputDir = filepath.Join(tmpDir, "output")
+	for _, dir := range []string{e.librarianDir, e.sourceDir, e.outputDir} {
+		if err := os.Mkdir(dir, 0755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+	}
+	return e
+}
+
+// cleanup removes the temporary directory.
+func (e *testEnv) cleanup(t *testing.T) {
+	t.Helper()
+	if err := os.RemoveAll(e.tmpDir); err != nil {
+		t.Fatalf("failed to remove temp dir: %v", err)
+	}
+}
+
+// writeRequestFile writes a generate-request.json file.
+func (e *testEnv) writeRequestFile(t *testing.T) {
+	t.Helper()
+	content := `{"id": "foo", "apis": [{"path": "api/v1"}]}`
+	p := filepath.Join(e.librarianDir, "generate-request.json")
+	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write request file: %v", err)
+	}
+}
+
+// writeBazelFile writes a BUILD.bazel file.
+func (e *testEnv) writeBazelFile(t *testing.T, content string) {
+	t.Helper()
+	apiDir := filepath.Join(e.sourceDir, "api/v1")
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatalf("failed to create api dir: %v", err)
+	}
+	// Create a fake .proto file, which is required by the protoc command builder.
+	if err := os.WriteFile(filepath.Join(apiDir, "fake.proto"), nil, 0644); err != nil {
+		t.Fatalf("failed to write fake proto file: %v", err)
+	}
+	p := filepath.Join(apiDir, "BUILD.bazel")
+	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write bazel file: %v", err)
+	}
+}
+
+func TestGenerate(t *testing.T) {
+	validBazel := `
+go_gapic_library(
+    name = "v1_gapic",
+    importpath = "path/to/v1;v1",
+    grpc_service_config = "service_config.json",
+    service_yaml = "service.yaml",
+    transport = "grpc",
+)
+`
+	invalidBazel := `
+go_gapic_library(
+    name = "v1_gapic",
+    importpath = "path/to/v1;v1",
+)
+`
+	tests := []struct {
+		name          string
+		setup         func(e *testEnv, t *testing.T)
+		protocErr     error
+		wantErr       bool
+		wantProtocRun bool
+	}{
+		{
+			name: "happy path",
+			setup: func(e *testEnv, t *testing.T) {
+				e.writeRequestFile(t)
+				e.writeBazelFile(t, validBazel)
+			},
+			wantErr:       false,
+			wantProtocRun: true,
+		},
+		{
+			name: "missing request file",
+			setup: func(e *testEnv, t *testing.T) {
+				e.writeBazelFile(t, validBazel)
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing bazel file",
+			setup: func(e *testEnv, t *testing.T) {
+				e.writeRequestFile(t)
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid bazel config",
+			setup: func(e *testEnv, t *testing.T) {
+				e.writeRequestFile(t)
+				e.writeBazelFile(t, invalidBazel)
+			},
+			wantErr: true,
+		},
+		{
+			name: "protoc fails",
+			setup: func(e *testEnv, t *testing.T) {
+				e.writeRequestFile(t)
+				e.writeBazelFile(t, validBazel)
+			},
+			protocErr:     errors.New("protoc failed"),
+			wantErr:       true,
+			wantProtocRun: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newTestEnv(t)
+			defer e.cleanup(t)
+
+			tt.setup(e, t)
+
+			var protocRunCalled bool
+			protocRun = func(ctx context.Context, args []string, dir string) error {
+				protocRunCalled = true
+				return tt.protocErr
+			}
+			postProcess = func(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
+				return nil
+			}
+
+			cfg := &Config{
+				LibrarianDir: e.librarianDir,
+				InputDir:     "fake-input",
+				OutputDir:    e.outputDir,
+				SourceDir:    e.sourceDir,
+			}
+
+			if err := Generate(context.Background(), cfg); (err != nil) != tt.wantErr {
+				t.Errorf("Generate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if protocRunCalled != tt.wantProtocRun {
+				t.Errorf("protocRun called = %v; want %v", protocRunCalled, tt.wantProtocRun)
+			}
+		})
+	}
+}
 
 func TestFixPermissions(t *testing.T) {
 	// Create a temporary directory for the test.
@@ -115,85 +277,6 @@ func TestFlattenOutput(t *testing.T) {
 		t.Errorf("old directory was not removed")
 	}
 }
-
-func TestGenerate(t *testing.T) {
-	// Create a temporary directory for the test.
-	tmpDir, err := os.MkdirTemp("", "generator-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// Create fake directories.
-	librarianDir := filepath.Join(tmpDir, "librarian")
-	sourceDir := filepath.Join(tmpDir, "source")
-	outputDir := filepath.Join(tmpDir, "output")
-	if err := os.MkdirAll(librarianDir, 0755); err != nil {
-		t.Fatalf("failed to create librarian dir: %v", err)
-	}
-	if err := os.MkdirAll(sourceDir, 0755); err != nil {
-		t.Fatalf("failed to create source dir: %v", err)
-	}
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		t.Fatalf("failed to create output dir: %v", err)
-	}
-
-	// Create a fake generate-request.json.
-	reqFile, err := os.Create(filepath.Join(librarianDir, "generate-request.json"))
-	if err != nil {
-		t.Fatalf("failed to create fake request file: %v", err)
-	}
-	fmt.Fprintln(reqFile, `{"id": "foo", "apis": [{"path": "api/v1"}]}`)
-	reqFile.Close()
-
-	// Create a fake BUILD.bazel file.
-	apiDir := filepath.Join(sourceDir, "api/v1")
-	if err := os.MkdirAll(apiDir, 0755); err != nil {
-		t.Fatalf("failed to create api dir: %v", err)
-	}
-	// Create a fake .proto file.
-	protoFile, err := os.Create(filepath.Join(apiDir, "fake.proto"))
-	if err != nil {
-		t.Fatalf("failed to create fake proto file: %v", err)
-	}
-	protoFile.Close()
-	bazelFile, err := os.Create(filepath.Join(apiDir, "BUILD.bazel"))
-	if err != nil {
-		t.Fatalf("failed to create fake bazel file: %v", err)
-	}
-	fmt.Fprint(bazelFile, `
-go_gapic_library(
-    name = "v1_gapic",
-    importpath = "path/to/v1;v1",
-    grpc_service_config = "service_config.json",
-    service_yaml = "service.yaml",
-    transport = "grpc",
-)
-`)
-	bazelFile.Close()
-
-	// Override dependencies with fakes.
-	postProcess = func(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
-		return nil
-	}
-	protocRun = func(ctx context.Context, args []string, dir string) error {
-		return nil
-	}
-	// We can use the real bazel.Parse and request.Parse because we created the
-	// necessary files.
-
-	cfg := &Config{
-		LibrarianDir: librarianDir,
-		InputDir:     "fake-input",
-		OutputDir:    outputDir,
-		SourceDir:    sourceDir,
-	}
-
-	if err := Generate(context.Background(), cfg); err != nil {
-		t.Errorf("Generate() error = %v, wantErr %v", err, false)
-	}
-}
-
 
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
