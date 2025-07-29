@@ -65,11 +65,7 @@ do
 done
 
 # Create a temporary directory for the entire test environment.
-TEST_DIR=/Users/chrisdsmith/oss/google-cloud-go/internal/librariangen/build_out
-echo "Cleaning up from last time: rm -rf $TEST_DIR"
-rm -rf "$TEST_DIR"
-echo "Cleaning up from last time: rm -rf $BINARY_PATH"
-rm -f "$BINARY_PATH"
+TEST_DIR=$(mktemp -d -t tmp.XXXXXXXXXX)
 echo "Using temporary directory: $TEST_DIR"
 
 # Define the directories replicating the mounts in the Docker container.

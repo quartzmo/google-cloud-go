@@ -29,6 +29,12 @@ import (
 	"cloud.google.com/go/internal/postprocessor/librarian/librariangen/request"
 )
 
+// TODO: The determination of whether a module is new or not should be
+// driven by configuration passed down from the orchestrating Librarian tool.
+// For now, we hardcode it to false, assuming we are always regenerating
+// existing modules.
+const isNewModule = false
+
 // Test substitution vars.
 var (
 	postProcess  = postprocessor.PostProcess
@@ -123,11 +129,6 @@ func Generate(ctx context.Context, cfg *Config) error {
 			return fmt.Errorf("could not determine module name from API path")
 		}
 		moduleDir := filepath.Join(cfg.OutputDir, moduleName)
-		// TODO: The determination of whether a module is new or not should be
-		// driven by configuration passed down from the orchestrating Librarian tool.
-		// For now, we hardcode it to false, assuming we are always regenerating
-		// existing modules.
-		isNewModule := true
 		if err := postProcess(ctx, generateReq, moduleDir, isNewModule); err != nil {
 			return fmt.Errorf("post-processing failed: %w", err)
 		}
