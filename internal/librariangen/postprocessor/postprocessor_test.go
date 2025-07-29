@@ -63,13 +63,13 @@ func TestPostProcess(t *testing.T) {
 				"README.md",
 				"apiv1/version.go",
 				"apiv2/version.go",
+				"internal/version.go",
 			},
 			wantFilesNotCreated: []string{
 				"go.mod",
 				"CHANGES.md",
-				"internal/version.go",
 			},
-			wantGoModInitCalled: false,
+			wantGoModInitCalled: true,
 			wantGoModTidyCalled: true,
 			wantErr:             false,
 		},
@@ -87,7 +87,7 @@ func TestPostProcess(t *testing.T) {
 				"apiv1/version.go",
 				"apiv2/version.go",
 			},
-			wantGoModInitCalled: false,
+			wantGoModInitCalled: true,
 			wantGoModTidyCalled: true,
 			wantErr:             false, // goimports error is logged but not returned
 		},
@@ -113,7 +113,7 @@ func TestPostProcess(t *testing.T) {
 				}
 				return nil
 			},
-			wantGoModInitCalled: false,
+			wantGoModInitCalled: true,
 			wantGoModTidyCalled: true,
 			wantErr:             true,
 		},

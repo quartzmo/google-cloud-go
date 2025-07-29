@@ -76,15 +76,12 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 
 	if newModule {
 		slog.Info("initializing new module")
-		if err := goModInit(ctx, shortModulePath, moduleDir); err != nil {
-			return fmt.Errorf("failed to run 'go mod init': %w", err)
-		}
 		if err := generateChanges(moduleDir); err != nil {
 			return fmt.Errorf("failed to generate CHANGES.md: %w", err)
 		}
-		if err := generateInternalVersionFile(moduleDir); err != nil {
-			return fmt.Errorf("failed to generate internal/version.go: %w", err)
-		}
+	}
+	if err := generateInternalVersionFile(moduleDir); err != nil {
+		return fmt.Errorf("failed to generate internal/version.go: %w", err)
 	}
 
 	if err := generateClientVersionFiles(req, moduleDir, moduleName); err != nil {
@@ -94,6 +91,10 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 	// The README should be updated on every run.
 	if err := generateReadme(moduleDir, shortModulePath, friendlyAPIName); err != nil {
 		return fmt.Errorf("failed to generate README.md: %w", err)
+	}
+
+	if err := goModInit(ctx, shortModulePath, moduleDir); err != nil {
+		return fmt.Errorf("failed to run 'go mod init': %w", err)
 	}
 
 	if err := goModTidy(ctx, moduleDir); err != nil {
