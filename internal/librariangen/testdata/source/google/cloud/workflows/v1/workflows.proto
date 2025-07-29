@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package google.cloud.workflows.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "cloud.google.com/go/workflows/apiv1/workflowspb;workflowspb";
+
+// A workflow is a collection of steps that are executed in a predefined order.
+message Workflow {
+  string name = 1;
+}
+
+// Request for the `ListWorkflows` method.
+message ListWorkflowsRequest {
+  string parent = 1;
+}
+
+// Response for the `ListWorkflows` method.
+message ListWorkflowsResponse {
+  repeated Workflow workflows = 1;
+}
+
+// Service for managing workflows.
+service Workflows {
+  // Lists workflows in a given project and location.
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*/locations/*}/workflows"
+    };
+  }
+}

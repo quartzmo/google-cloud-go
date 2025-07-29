@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package google.api;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "google.golang.org/genproto/googleapis/api/annotations;annotations";
+
+extend google.protobuf.MethodOptions {
+  HttpRule http = 72295728;
+}
+
+message HttpRule {
+  string selector = 1;
+  oneof pattern {
+    string get = 2;
+    string put = 3;
+    string post = 4;
+    string delete = 5;
+    string patch = 6;
+    CustomHttpPattern custom = 8;
+  }
+  string body = 7;
+  repeated HttpRule additional_bindings = 11;
+}
+
+message CustomHttpPattern {
+  string kind = 1;
+  string path = 2;
+}
