@@ -48,14 +48,16 @@ var (
 // formatters and other tools to ensure code quality. The high-level steps are:
 //
 //  1. Run `goimports` to format the code.
-//  2. If `newModule` is true, perform one-time initialization for a new module:
-//     a. Run `go mod init`.
-//     b. Generate a placeholder `CHANGES.md`.
-//     c. Generate a module-level `internal/version.go`.
-//  3. Generate a client-level `version.go` for each API version specified in
+//  2. If `newModule` is true, perform one-time initialization for a new module
+//     by generating a placeholder `CHANGES.md`.
+//  3. Generate a module-level `internal/version.go`. This is required for both
+//     new and existing modules because client-level `version.go` files import
+//     it, and `go mod tidy` will fail without it.
+//  4. Generate a client-level `version.go` for each API version specified in
 //     the request.
-//  4. Generate a `README.md`.
-//  5. Run `go mod tidy` to clean up the `go.mod` file.
+//  5. Generate a `README.md`.
+//  6. Run `go mod init`.
+//  8. Run `go mod tidy` to clean up the `go.mod` file.
 func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
 	slog.Debug("starting post-processing", "directory", moduleDir, "new_module", newModule)
 
