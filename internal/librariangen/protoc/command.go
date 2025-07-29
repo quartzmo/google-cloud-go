@@ -116,11 +116,11 @@ func Run(ctx context.Context, args []string, outputDir string) error {
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Env = os.Environ()
 	cmd.Dir = outputDir // Run commands from the output directory.
-	slog.Info("running command", "command", strings.Join(cmd.Args, " "), "dir", cmd.Dir)
+	slog.Debug("running command", "command", strings.Join(cmd.Args, " "), "dir", cmd.Dir)
 
 	output, err := cmd.CombinedOutput()
 	if len(output) > 0 {
-		slog.Info("command output", "output", string(output))
+		slog.Debug("command output", "output", string(output))
 	}
 	if err != nil {
 		return fmt.Errorf("command failed with error: %w", err)

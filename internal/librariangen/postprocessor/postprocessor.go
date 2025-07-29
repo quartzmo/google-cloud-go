@@ -57,14 +57,14 @@ var (
 //  4. Generate a `README.md`.
 //  5. Run `go mod tidy` to clean up the `go.mod` file.
 func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
-	slog.Info("starting post-processing", "directory", moduleDir, "new_module", newModule)
+	slog.Debug("starting post-processing", "directory", moduleDir, "new_module", newModule)
 
 	if err := goimports(ctx, moduleDir); err != nil {
 		slog.Warn("goimports failed, continuing without it", "error", err)
 	}
 
 	if len(req.APIs) == 0 {
-		slog.Info("no APIs in request, skipping module initialization")
+		slog.Debug("no APIs in request, skipping module initialization")
 		return nil
 	}
 
@@ -75,7 +75,7 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 	friendlyAPIName := strings.Title(strings.Replace(moduleName, "-", " ", -1)) + " API"
 
 	if newModule {
-		slog.Info("initializing new module")
+		slog.Debug("initializing new module")
 		if err := generateChanges(moduleDir); err != nil {
 			return fmt.Errorf("failed to generate CHANGES.md: %w", err)
 		}
@@ -101,7 +101,7 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 		return fmt.Errorf("failed to run 'go mod tidy': %w", err)
 	}
 
-	slog.Info("post-processing finished successfully")
+	slog.Debug("post-processing finished successfully")
 	return nil
 }
 
@@ -132,7 +132,7 @@ func goModTidy(ctx context.Context, dir string) error {
 // generateReadme creates a README.md file for a new module.
 func generateReadme(path, modulePath, apiName string) error {
 	readmePath := filepath.Join(path, "README.md")
-	slog.Info("creating file", "path", readmePath)
+	slog.Debug("creating file", "path", readmePath)
 	readmeFile, err := os.Create(readmePath)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func generateReadme(path, modulePath, apiName string) error {
 // generateChanges creates a CHANGES.md file for a new module.
 func generateChanges(moduleDir string) error {
 	changesPath := filepath.Join(moduleDir, "CHANGES.md")
-	slog.Info("creating file", "path", changesPath)
+	slog.Debug("creating file", "path", changesPath)
 	content := "# Changes\n"
 	return os.WriteFile(changesPath, []byte(content), 0644)
 }
@@ -164,7 +164,7 @@ func generateInternalVersionFile(moduleDir string) error {
 		return err
 	}
 	versionPath := filepath.Join(internalDir, "version.go")
-	slog.Info("creating file", "path", versionPath)
+	slog.Debug("creating file", "path", versionPath)
 	t := template.Must(template.New("internal_version").Parse(internalVersionTmpl))
 	internalVersionData := struct {
 		Year int
@@ -203,7 +203,7 @@ func generateClientVersionFile(clientDir, moduleName string) error {
 		return err
 	}
 	versionPath := filepath.Join(clientDir, "version.go")
-	slog.Info("creating file", "path", versionPath)
+	slog.Debug("creating file", "path", versionPath)
 	t := template.Must(template.New("version").Parse(versionTmpl))
 	versionData := struct {
 		Year               int

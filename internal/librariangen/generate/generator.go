@@ -111,7 +111,7 @@ func Generate(ctx context.Context, cfg *Config) error {
 	slog.Info("using module path from final API", "importpath", modulePath)
 
 	if cfg.EnablePostProcessor {
-		slog.Info("post-processor enabled")
+		slog.Debug("post-processor enabled")
 		generateReq, err := readGenerateReq(cfg.LibrarianDir)
 		if err != nil {
 			return err
@@ -134,7 +134,7 @@ func Generate(ctx context.Context, cfg *Config) error {
 		}
 	}
 
-	slog.Info("generate command finished")
+	slog.Debug("generate command finished")
 	return nil
 }
 
@@ -142,7 +142,7 @@ func Generate(ctx context.Context, cfg *Config) error {
 // It reads a request file, and for each API specified, it invokes protoc
 // to generate the client library.
 func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
-	slog.Info("generate command started")
+	slog.Debug("generate command started")
 
 	generateReq, err := readGenerateReq(cfg.LibrarianDir)
 	if err != nil {
@@ -182,26 +182,26 @@ func handleGapicgen(ctx context.Context, cfg *Config) (string, error) {
 // It is prepared by the Librarian tool and mounted at /librarian.
 func readGenerateReq(librarianDir string) (*request.Request, error) {
 	reqPath := filepath.Join(librarianDir, "generate-request.json")
-	slog.Info("reading generate request", "path", reqPath)
+	slog.Debug("reading generate request", "path", reqPath)
 
 	generateReq, err := requestParse(reqPath)
 	if err != nil {
 		return nil, err
 	}
-	slog.Info("successfully unmarshalled request", "library_id", generateReq.ID)
+	slog.Debug("successfully unmarshalled request", "library_id", generateReq.ID)
 	return generateReq, nil
 }
 
 // fixPermissions recursively finds all .go files in the given directory and sets
 // their permissions to 0644.
 func fixPermissions(dir string) error {
-	slog.Info("fixing file permissions", "dir", dir)
+	slog.Debug("fixing file permissions", "dir", dir)
 	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && strings.HasSuffix(path, ".go") {
-			slog.Info("fixing file", "path", path)
+			slog.Debug("fixing file", "path", path)
 			if err := os.Chmod(path, 0644); err != nil {
 				return fmt.Errorf("failed to chmod %s: %w", path, err)
 			}
@@ -213,7 +213,7 @@ func fixPermissions(dir string) error {
 // flattenOutput moves the contents of /output/cloud.google.com/go/ to the top
 // level of /output.
 func flattenOutput(outputDir string) error {
-	slog.Info("flattening output directory", "dir", outputDir)
+	slog.Debug("flattening output directory", "dir", outputDir)
 	goDir := filepath.Join(outputDir, "cloud.google.com", "go")
 	if _, err := os.Stat(goDir); os.IsNotExist(err) {
 		slog.Warn("go directory does not exist, skipping flatten", "path", goDir)
@@ -226,7 +226,7 @@ func flattenOutput(outputDir string) error {
 	for _, f := range files {
 		oldPath := filepath.Join(goDir, f.Name())
 		newPath := filepath.Join(outputDir, f.Name())
-		slog.Info("moving file", "from", oldPath, "to", newPath)
+		slog.Debug("moving file", "from", oldPath, "to", newPath)
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return fmt.Errorf("failed to move %s to %s: %w", oldPath, newPath, err)
 		}
