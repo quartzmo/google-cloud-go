@@ -134,14 +134,14 @@ func TestPostProcess(t *testing.T) {
 			}
 
 			req := &request.Request{
-				ID: "google-cloud-chronicle",
+				ID: "chronicle",
 				APIs: []request.API{
 					{Path: "google/cloud/chronicle/v1"},
 					{Path: "google/cloud/chronicle/v2"},
 				},
 			}
 
-			if err := PostProcess(context.Background(), req, tmpDir, tt.newModule); (err != nil) != tt.wantErr {
+			if err := PostProcess(context.Background(), req, tmpDir, tt.newModule, "Chronicle API"); (err != nil) != tt.wantErr {
 				t.Fatalf("PostProcess() error = %v, wantErr %v", err, tt.wantErr)
 			}
 

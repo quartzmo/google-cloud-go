@@ -134,8 +134,8 @@ func Generate(ctx context.Context, cfg *Config) error {
 		if moduleName == "" {
 			return fmt.Errorf("could not determine module name from API path")
 		}
-		moduleDir := filepath.Join(cfg.OutputDir, moduleName)
-		if err := postProcess(ctx, generateReq, moduleDir, isNewModule); err != nil {
+		moduleDir := filepath.Join(cfg.OutputDir, generateReq.ID)
+		if err := postProcess(ctx, generateReq, moduleDir, isNewModule, "Chronicle API"); err != nil { // TODO: replace hardcoded title "Chronicle API" with title from testdata/source/google/cloud/workflows/v1/workflows_v1.yaml.
 			return fmt.Errorf("post-processing failed: %w", err)
 		}
 	}

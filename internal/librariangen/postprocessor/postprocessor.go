@@ -58,7 +58,7 @@ var (
 //  5. Generate a `README.md`.
 //  6. Run `go mod init`.
 //  8. Run `go mod tidy` to clean up the `go.mod` file.
-func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool) error {
+func PostProcess(ctx context.Context, req *request.Request, moduleDir string, newModule bool, title string) error {
 	slog.Debug("starting post-processing", "directory", moduleDir, "new_module", newModule)
 
 	if err := goimports(ctx, moduleDir); err != nil {
@@ -70,11 +70,8 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 		return nil
 	}
 
-	// E.g. google-cloud-chronicle -> chronicle
-	moduleName := strings.TrimPrefix(req.ID, "google-cloud-")
-	shortModulePath := "cloud.google.com/go/" + moduleName
-	// E.g. google-cloud-chronicle -> Chronicle API
-	friendlyAPIName := strings.Title(strings.Replace(moduleName, "-", " ", -1)) + " API"
+	// E.g. cloud.google.com/go/chronicle
+	modulePath := "cloud.google.com/go/" + req.ID
 
 	if newModule {
 		slog.Debug("initializing new module")
@@ -86,16 +83,16 @@ func PostProcess(ctx context.Context, req *request.Request, moduleDir string, ne
 		return fmt.Errorf("failed to generate internal/version.go: %w", err)
 	}
 
-	if err := generateClientVersionFiles(req, moduleDir, moduleName); err != nil {
+	if err := generateClientVersionFiles(req, moduleDir, req.ID); err != nil {
 		return fmt.Errorf("failed to generate client version files: %w", err)
 	}
 
 	// The README should be updated on every run.
-	if err := generateReadme(moduleDir, shortModulePath, friendlyAPIName); err != nil {
+	if err := generateReadme(moduleDir, modulePath, title); err != nil {
 		return fmt.Errorf("failed to generate README.md: %w", err)
 	}
 
-	if err := goModInit(ctx, shortModulePath, moduleDir); err != nil {
+	if err := goModInit(ctx, modulePath, moduleDir); err != nil {
 		return fmt.Errorf("failed to run 'go mod init': %w", err)
 	}
 
@@ -132,7 +129,7 @@ func goModTidy(ctx context.Context, dir string) error {
 }
 
 // generateReadme creates a README.md file for a new module.
-func generateReadme(path, modulePath, apiName string) error {
+func generateReadme(path, modulePath, title string) error {
 	readmePath := filepath.Join(path, "README.md")
 	slog.Debug("creating file", "path", readmePath)
 	readmeFile, err := os.Create(readmePath)
@@ -145,7 +142,7 @@ func generateReadme(path, modulePath, apiName string) error {
 		Name       string
 		ModulePath string
 	}{
-		Name:       apiName,
+		Name:       title,
 		ModulePath: modulePath,
 	}
 	return t.Execute(readmeFile, readmeData)
