@@ -21,12 +21,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/gax-go/v2"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	oteltrace "go.opentelemetry.io/otel/trace"
+
+oteltrace "go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -43,7 +46,11 @@ const (
 	valLocalhost = "127.0.0.1"
 )
 
-func TestNewClient_OpenTelemetry(t *testing.T) {
+func TestNewClient_OpenTelemetry_Enabled(t *testing.T) {
+	gax.TestOnlyResetIsFeatureEnabled()
+	defer gax.TestOnlyResetIsFeatureEnabled()
+	t.Setenv("GOOGLE_SDK_GO_EXPERIMENTAL_TRACING", "true")
+
 	defer http.DefaultTransport.(*http.Transport).CloseIdleConnections()
 
 	exporter := tracetest.NewInMemoryExporter()
@@ -83,9 +90,10 @@ func TestNewClient_OpenTelemetry(t *testing.T) {
 					// "server.address", "server.port", and "url.full" are displayed as
 					// standard attribute keys in the "Attributes" tab.
 					keyServerAddr.String(valLocalhost),
+					attribute.String("rpc.system", "http"),
 				},
 			}.Snapshot(),
-			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull},
+			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull, attribute.Key("url.domain")},
 		},
 		{
 			name:       "telemetry enabled error",
@@ -105,10 +113,12 @@ func TestNewClient_OpenTelemetry(t *testing.T) {
 					keyHTTPResponseStatus.Int(500),
 					keyNetProtoVersion.String(valHTTP11),
 					keyServerAddr.String(valLocalhost),
-					keyErrorType.String("500"), // otelhttp adds this on error
+					keyErrorType.String("500"),
+					attribute.String("status.message", "500 Internal Server Error"),
+					attribute.String("rpc.system", "http"),
 				},
 			}.Snapshot(),
-			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull},
+			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull, attribute.Key("url.domain")},
 		},
 		{
 			name: "telemetry disabled",
@@ -118,6 +128,31 @@ func TestNewClient_OpenTelemetry(t *testing.T) {
 			},
 			statusCode: http.StatusOK,
 			wantSpans:  0,
+		},
+		{
+			name: "telemetry enabled metadata enrichment",
+			opts: &Options{
+				DisableAuthentication: true,
+				InternalOptions: &InternalOptions{
+					TelemetryAttributes: map[string]string{
+						"gcp.client.version": "1.0.0",
+					},
+				},
+			},
+			statusCode: http.StatusOK,
+			wantSpans:  1,
+			wantSpan: tracetest.SpanStub{
+				Name:     "HTTP GET",
+				SpanKind: oteltrace.SpanKindClient,
+				Attributes: []attribute.KeyValue{
+					keyHTTPRequestMetod.String(valHTTPGet),
+					keyHTTPResponseStatus.Int(200),
+					attribute.String("gcp.resource.name", "my-resource"),
+					attribute.String("gcp.client.version", "1.0.0"),
+					attribute.String("rpc.system", "http"),
+				},
+			}.Snapshot(),
+			wantAttrKeys: []attribute.Key{keyServerAddr, attribute.Key("url.domain")},
 		},
 	}
 
@@ -136,7 +171,12 @@ func TestNewClient_OpenTelemetry(t *testing.T) {
 				t.Fatalf("NewClient() = %v, want nil", err)
 			}
 
-			req, err := http.NewRequest("GET", server.URL, nil)
+			ctx := context.Background()
+			if tt.name == "telemetry enabled metadata enrichment" {
+				ctx = metadata.AppendToOutgoingContext(ctx, "gcp.resource.name", "my-resource")
+			}
+
+			req, err := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
 			if err != nil {
 				t.Fatalf("http.NewRequest() = %v, want nil", err)
 			}
@@ -191,6 +231,178 @@ func TestNewClient_OpenTelemetry(t *testing.T) {
 				//
 				// This test focuses on verifying the "http.*", "net.*" and "url.*" attributes generated
 				// by the otelhttp instrumentation library.
+
+				gotAttrs := map[attribute.Key]attribute.Value{}
+				for _, attr := range span.Attributes {
+					gotAttrs[attr.Key] = attr.Value
+				}
+				for _, wantAttr := range tt.wantSpan.Attributes() {
+					if gotVal, ok := gotAttrs[wantAttr.Key]; !ok {
+						t.Errorf("missing attribute: %s", wantAttr.Key)
+					} else {
+						// Use simple value comparison for non-dynamic fields
+						if diff := cmp.Diff(wantAttr.Value, gotVal, cmp.AllowUnexported(attribute.Value{})); diff != "" {
+							t.Errorf("attribute %s mismatch (-want +got):\n%s", wantAttr.Key, diff)
+						}
+					}
+				}
+				for _, wantKey := range tt.wantAttrKeys {
+					if _, ok := gotAttrs[wantKey]; !ok {
+						t.Errorf("missing attribute key: %s", wantKey)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestNewClient_OpenTelemetry_Disabled(t *testing.T) {
+	gax.TestOnlyResetIsFeatureEnabled()
+	defer gax.TestOnlyResetIsFeatureEnabled()
+	t.Setenv("GOOGLE_SDK_GO_EXPERIMENTAL_TRACING", "false")
+
+	defer http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	defer tp.Shutdown(context.Background())
+
+	// Restore the global tracer provider after the test to avoid side effects.
+	defer func(prev oteltrace.TracerProvider) { otel.SetTracerProvider(prev) }(otel.GetTracerProvider())
+	otel.SetTracerProvider(tp)
+
+	tests := []struct {
+		name         string
+		opts         *Options
+		statusCode   int
+		wantSpans    int
+		wantSpan     sdktrace.ReadOnlySpan
+		wantAttrKeys []attribute.Key
+	}{
+		{
+			name:       "telemetry enabled success (but gated off)",
+			opts:       &Options{DisableAuthentication: true},
+			statusCode: http.StatusOK,
+			wantSpans:  1,
+			wantSpan: tracetest.SpanStub{
+				Name:     "HTTP GET",
+				SpanKind: oteltrace.SpanKindClient,
+				Status: sdktrace.Status{
+					Code: codes.Unset,
+				},
+				Attributes: []attribute.KeyValue{
+					keyHTTPRequestMetod.String(valHTTPGet),
+					keyHTTPResponseStatus.Int(200),
+					keyNetProtoVersion.String(valHTTP11),
+					keyServerAddr.String(valLocalhost),
+					// NO rpc.system
+				},
+			}.Snapshot(),
+			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull}, // NO url.domain
+		},
+		{
+			name:       "telemetry enabled error (but gated off)",
+			opts:       &Options{DisableAuthentication: true},
+			statusCode: http.StatusInternalServerError,
+			wantSpans:  1,
+			wantSpan: tracetest.SpanStub{
+				Name:     "HTTP GET",
+				SpanKind: oteltrace.SpanKindClient,
+				Status: sdktrace.Status{
+					Code:        codes.Error,
+					Description: "",
+				},
+				Attributes: []attribute.KeyValue{
+					keyHTTPRequestMetod.String(valHTTPGet),
+					keyHTTPResponseStatus.Int(500),
+					keyNetProtoVersion.String(valHTTP11),
+					keyServerAddr.String(valLocalhost),
+					// NO rpc.system, status.message, error.type
+				},
+			}.Snapshot(),
+			wantAttrKeys: []attribute.Key{keyServerPort, keyURLFull}, // NO url.domain
+		},
+		{
+			name: "telemetry disabled",
+			opts: &Options{
+				DisableAuthentication: true,
+				DisableTelemetry:      true,
+			},
+			statusCode: http.StatusOK,
+			wantSpans:  0,
+		},
+		{
+			name: "telemetry enabled metadata enrichment (but gated off)",
+			opts: &Options{
+				DisableAuthentication: true,
+				InternalOptions: &InternalOptions{
+					TelemetryAttributes: map[string]string{
+						"gcp.client.version": "1.0.0",
+					},
+				},
+			},
+			statusCode: http.StatusOK,
+			wantSpans:  1,
+			wantSpan: tracetest.SpanStub{
+				Name:     "HTTP GET",
+				SpanKind: oteltrace.SpanKindClient,
+				Attributes: []attribute.KeyValue{
+					keyHTTPRequestMetod.String(valHTTPGet),
+					keyHTTPResponseStatus.Int(200),
+					// NO gcp.* attributes, NO rpc.system
+				},
+			}.Snapshot(),
+			wantAttrKeys: []attribute.Key{keyServerAddr}, // NO url.domain
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exporter.Reset()
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+			}))
+			defer server.Close()
+
+			tt.opts.Endpoint = server.URL
+			client, err := NewClient(tt.opts)
+			if err != nil {
+				t.Fatalf("NewClient() = %v, want nil", err)
+			}
+
+			ctx := context.Background()
+			if tt.name == "telemetry enabled metadata enrichment (but gated off)" {
+				ctx = metadata.AppendToOutgoingContext(ctx, "gcp.resource.name", "my-resource")
+			}
+
+			req, err := http.NewRequestWithContext(ctx, "GET", server.URL, nil)
+			if err != nil {
+				t.Fatalf("http.NewRequest() = %v, want nil", err)
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatalf("client.Do() = %v, want nil", err)
+			}
+			resp.Body.Close()
+
+			spans := exporter.GetSpans()
+			if len(spans) != tt.wantSpans {
+				t.Fatalf("len(spans) = %d, want %d", len(spans), tt.wantSpans)
+			}
+
+			if tt.wantSpans > 0 {
+				span := exporter.GetSpans()[0]
+				if diff := cmp.Diff(tt.wantSpan.Name(), span.Name); diff != "" {
+					t.Errorf("span.Name mismatch (-want +got):\n%s", diff)
+				}
+				if diff := cmp.Diff(tt.wantSpan.SpanKind(), span.SpanKind); diff != "" {
+					t.Errorf("span.SpanKind mismatch (-want +got):\n%s", diff)
+				}
+				if diff := cmp.Diff(tt.wantSpan.Status(), span.Status); diff != "" {
+					t.Errorf("span.Status mismatch (-want +got):\n%s", diff)
+				}
 
 				gotAttrs := map[attribute.Key]attribute.Value{}
 				for _, attr := range span.Attributes {

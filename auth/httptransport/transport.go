@@ -17,9 +17,11 @@ package httptransport
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/auth"
@@ -28,7 +30,11 @@ import (
 	"cloud.google.com/go/auth/internal/transport"
 	"cloud.google.com/go/auth/internal/transport/cert"
 	"cloud.google.com/go/auth/internal/transport/headers"
+	"github.com/googleapis/gax-go/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/metadata"
 	"golang.org/x/net/http2"
 )
 
@@ -173,7 +179,65 @@ func addOpenTelemetryTransport(trans http.RoundTripper, opts *Options) http.Roun
 	if opts.DisableTelemetry {
 		return trans
 	}
-	return otelhttp.NewTransport(trans)
+	if !gax.IsFeatureEnabled("TRACING") {
+		return otelhttp.NewTransport(trans)
+	}
+	var staticAttrs []attribute.KeyValue
+	if opts.InternalOptions != nil {
+		for k, v := range opts.InternalOptions.TelemetryAttributes {
+			staticAttrs = append(staticAttrs, attribute.String(k, v))
+		}
+	}
+	return otelhttp.NewTransport(&otelAttributeTransport{
+		base:        trans,
+		staticAttrs: staticAttrs,
+	})
+}
+
+// otelAttributeTransport is a wrapper around an http.RoundTripper that adds
+// custom Google Cloud-specific attributes to OpenTelemetry spans.
+type otelAttributeTransport struct {
+	base        http.RoundTripper
+	staticAttrs []attribute.KeyValue
+}
+
+// RoundTrip intercepts the HTTP request and response to enrich the active
+// OpenTelemetry span with static and dynamic attributes, as well as detailed
+// error information.
+func (t *otelAttributeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	span := trace.SpanFromContext(req.Context())
+	if span.IsRecording() {
+		span.SetAttributes(t.staticAttrs...)
+		span.SetAttributes(attribute.String("rpc.system", "http"))
+		span.SetAttributes(attribute.String("url.domain", req.URL.Host))
+		if md, ok := metadata.FromOutgoingContext(req.Context()); ok {
+			if v := md["gcp.resource.name"]; len(v) > 0 {
+				span.SetAttributes(attribute.String("gcp.resource.name", v[0]))
+			}
+			if v := md["gcp.grpc.resend_count"]; len(v) > 0 {
+				span.SetAttributes(attribute.String("gcp.grpc.resend_count", v[0]))
+			}
+		}
+	}
+
+	resp, err := t.base.RoundTrip(req)
+
+	if span.IsRecording() {
+		if err != nil {
+			span.SetAttributes(
+				attribute.String("error.type", "ERROR"),
+				attribute.String("status.message", err.Error()),
+				attribute.String("exception.type", fmt.Sprintf("%T", err)),
+			)
+		} else if resp.StatusCode >= 400 {
+			span.SetAttributes(
+				attribute.String("error.type", strconv.Itoa(resp.StatusCode)),
+				attribute.String("status.message", resp.Status),
+			)
+		}
+	}
+
+	return resp, err
 }
 
 type authTransport struct {
