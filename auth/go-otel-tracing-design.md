@@ -37,24 +37,24 @@ Baseline tests for existing OpenTelemetry behavior are already in place within `
 
 ```mermaid
 graph TD
-    UserCode[User Code] --> GAPIC[Generated Client (GAPIC)]
+    UserCode[User Code] --> GAPIC[Generated Client - GAPIC]
     
-    subgraph "Client Layer (Request)"
-    GAPIC -- 1. Resource Name (Metadata) --> GAX[gax.Invoke]
-    GAX -- 2. Retry Count (Metadata) --> TransportWrapper[Auth Transport Wrapper]
+    subgraph "Client Layer - Request"
+    GAPIC -- 1. Resource Name - Metadata --> GAX[gax.Invoke]
+    GAX -- 2. Retry Count - Metadata --> TransportWrapper[Auth Transport Wrapper]
     end
 
-    subgraph "Transport Layer (Start)"
+    subgraph "Transport Layer - Start"
     TransportWrapper -- 3. Configures Static Attrs --> OTelHandler[OTel Handler]
     TransportWrapper -- 4. Reads Metadata & Enriches Span --> OTelSDK[OpenTelemetry SDK]
     end
 
     OTelHandler -- Starts Span --> OTelSDK
     
-    TransportWrapper -- 5. RPC Call --> Network[Network (gRPC/HTTP)]
+    TransportWrapper -- 5. RPC Call --> Network[Network - gRPC/HTTP]
     Network -- 6. Response/Error --> TransportWrapper
     
-    subgraph "Transport Layer (End)"
+    subgraph "Transport Layer - End"
     TransportWrapper -- 7. Inspects Error/Status & Enriches Span --> OTelSDK
     end
 ```
@@ -66,17 +66,17 @@ This diagram illustrates how attributes from different sources are consolidated 
 ```mermaid
 graph TD
     subgraph "Sources"
-    Static[Static Identity<br/>(ClientOptions)]
-    Dynamic[Dynamic Context<br/>(Metadata: resource.name, retry)]
-    Outcome[RPC Outcome<br/>(Error/Response)]
+    Static[Static Identity<br/>- ClientOptions]
+    Dynamic[Dynamic Context<br/>- Metadata: resource.name, retry]
+    Outcome[RPC Outcome<br/>- Error/Response]
     end
 
     subgraph "Processing"
-    Wrapper[<b>Auth Transport Wrapper</b>]
+    Wrapper[Auth Transport Wrapper]
     end
 
     subgraph "Telemetry"
-    Span[<b>OpenTelemetry Span</b>]
+    Span[OpenTelemetry Span]
     end
 
     Static -- Configure --> Wrapper
@@ -109,7 +109,7 @@ sequenceDiagram
     OTelGRPC-->>Wrapper: Return Context (with Span)
     
     rect rgb(240, 248, 255)
-    Note right of Wrapper: <b>Custom Enrichment</b>
+    Note right of Wrapper: Custom Enrichment
     Wrapper->>Wrapper: Extract Metadata (resource.name)
     Wrapper->>Span: SetAttributes(Dynamic)
     end
@@ -120,7 +120,7 @@ sequenceDiagram
     Transport->>Wrapper: HandleRPC(ctx, stats)
     
     rect rgb(255, 240, 240)
-    Note right of Wrapper: <b>Strict Error Handling</b>
+    Note right of Wrapper: Error Handling
     Wrapper->>Wrapper: Inspect stats.Error
     Wrapper->>Span: SetAttributes(error.type, grpc.status)
     end
@@ -146,7 +146,7 @@ sequenceDiagram
     OTelHTTP->>Wrapper: RoundTrip(req)
 
     rect rgb(240, 248, 255)
-    Note right of Wrapper: <b>Custom Enrichment</b>
+    Note right of Wrapper: Custom Enrichment
     Wrapper->>Wrapper: Extract Context Metadata
     Wrapper->>Span: SetAttributes(Static + Dynamic)
     end
@@ -155,7 +155,7 @@ sequenceDiagram
     Base-->>Wrapper: Response/Error
 
     rect rgb(255, 240, 240)
-    Note right of Wrapper: <b>Strict Error Handling</b>
+    Note right of Wrapper: Error Handling
     Wrapper->>Wrapper: Inspect Error/StatusCode
     Wrapper->>Span: SetAttributes(error.type, status.message)
     end
@@ -208,13 +208,14 @@ The transport layer cannot know about specific API fields (like `req.Parent` vs 
 *   **Enrichment:** `grpctransport` uses a `stats.Handler` wrapper. In `TagRPC`, it reads the metadata and sets attributes on the newly created span.
 
 ### HTTP Implementation
-*   **Injection:** Generated client checks `gax.IsFeatureEnabled("TRACING")`. If enabled, it injects resource name into the `context.Context` using a private key (e.g., `internal.WithResourceName`).
-*   **Enrichment:** `httptransport` inserts a custom `http.RoundTripper` *inside* the `otelhttp` transport.
-    1.  `otelhttp` starts the span.
-    2.  Custom Tripper runs: `span := trace.SpanFromContext(req.Context())`.
-    3.  Custom Tripper reads resource name from `req.Context()`.
-    4.  Custom Tripper sets attributes on the span.
-    5.  Custom Tripper calls `base.RoundTrip`.
+* **Injection:** Generated client checks `gax.IsFeatureEnabled("TRACING")`. If enabled, it injects the resource name (key: `gcp.resource.name`) and the URL template (key: `url.template`) into **Outgoing Context Metadata**.
+* **Enrichment:** `httptransport` inserts a custom `http.RoundTripper` *inside* the `otelhttp` transport.  
+  1. `otelhttp` starts the span.  
+  2. Custom Tripper runs: `span := trace.SpanFromContext(req.Context())`.  
+  3. Custom Tripper reads metadata for the `gcp.resource.name` and `url.template` keys from `google.golang.org/grpc/metadata.FromOutgoingContext(req.Context())`.  
+  4. Custom Tripper sets attributes on the span.  
+  5. **Span Renaming:** If `url.template` is present, the wrapper updates the span name to the format `{METHOD} {url.template}` (e.g., "GET /v1/projects/*/secrets/*").
+  6. Custom Tripper calls `base.RoundTrip`.
 
 ### Impacted Modules & Code Location
 
