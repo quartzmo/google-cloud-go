@@ -236,63 +236,72 @@ The transport layer cannot know about specific API fields (like `req.Parent` vs 
     *   **Compatibility:** This is strictly additive via context/metadata.
 2.  **`google-cloud-go/auth` (This Repo):**
     *   **Dynamic Attributes (`TagRPC`):** The `stats.Handler` wrapper reads metadata (`gcp.resource.name`, `resend_count`) and sets attributes on span creation.
-    *   **Error Attributes (`HandleRPC`):** The wrapper implements `HandleRPC` to inspect the final status of the call. It explicitly sets:
-        *   `error.type`: The canonical gRPC status code in UPPER_CASE (e.g., "UNAVAILABLE").
-        *   `grpc.status`: The same upper-case code.
-        *   `status.message`: The descriptive error message.
-
-# Validation & Maturity Plan
-
-To move this feature from **EXPERIMENTAL** (Feature Gated) to **STABLE** (Default Enabled), the following validation steps must be completed.
-
-## 1. Unit Testing (Coverage)
-*   **Goal:** Ensure that all behavior complies with the functional requirements and design.
-*   **Scope:**
-    *   **Gating:** Verify that no behavioral changes occur when `GOOGLE_SDK_GO_EXPERIMENTAL_TRACING` is unset or false.
-    *   **Total Disable:** Verify that `option.WithTelemetryDisabled()` (propagated via `Options.DisableTelemetry`) correctly suppresses ALL OpenTelemetry spans, overriding any feature flag settings.
-    *   **Enrichment:** Verify that spans contain `gcp.client.*`, `gcp.resource.name`, `gcp.grpc.resend_count` and all other expected attributes when enabled.
-    *   **Error Handling:** Verify `error.type`, `grpc.status` (UPPER_CASE), and `status.message` are set correctly on failure.
-    *   **Generators:** Verify `gapic-generator-go` emits the correct conditional logic for metadata injection.
-
-## 2. GAPIC Integration Testing (End-to-End)
-*   **Goal:** Verify that `url.template` and `gcp.resource.name` extraction works correctly for real Google Cloud APIs.
-*   **Action:**
-    *   Select a representative set of GAPIC clients (e.g., `apigeeconnect`, `datacatalog`, `kms`, `texttospeech`).
-    *   Regenerate these clients using the updated generator.
-    *   Run integration tests with the feature flag enabled.
-    *   Inspect the generated spans (using a mock collector or the Cloud Trace exporter) to confirm `url.template` and `gcp.resource.name` match the expected format.
-
-## 3. Conformance Testing
-*   **Goal:** Ensure attributes adhere strictly to the Semantic Conventions defined in the [Tracing Requirements for Go Client Libraries](tracing-requirements-for-go-client-libraries.md).
-*   **Action:**
-    *   Manually audit that all expected attribute keys and values are present.
-    *   Verify that default attributes appear on both spans (and metrics, when implemented).
-
-## 4. Performance Benchmarking
-*   **Goal:** Ensure the overhead of the transport wrappers and metadata injection is negligible.
-*   **Action:**
-    *   Benchmark the **Transport Wrappers** (`grpctransport.otelHandler` and `httptransport.otelAttributeTransport`) to measure the specific cost of attribute injection, error inspection (reflection), and string manipulation.
-    *   Run **End-to-End Client Benchmarks** (Generated Client -> Mock Server) to measure the cumulative latency and allocation overhead of the entire feature chain.
-    *   Compare CPU and Memory allocation with the feature flag **Enabled** vs **Disabled**.
-    *   Target: < 1% increase in latency/allocations for high-frequency RPCs (baseline to be established via existing benchmarks).
-
-## 5. Interoperability Verification
-*   **Goal:** Ensure the library plays nicely with user-configured OpenTelemetry environments.
-*   **Action:**
-    *   Verify behavior when the user configures the **Global TracerProvider** (via `otel.SetTracerProvider`) with custom sampling or exporters.
-    *   Verify that `gcp.*` attributes are correctly exported to a non-Google backend.
-
-## 6. Backwards Compatibility Check
-*   **Goal:** Ensure zero regression for users not using OpenTelemetry.
-*   **Action:**
-    *   Verify that the library behaves identically to the previous version when the feature flag is disabled (the default).
-    *   Verify that the library behaves identically to the previous version when all telemetry is disabled.
-    *   Ensure no panic/crash occurs if OTel SDKs are not initialized or configured.
-
-# Alternatives Considered
-
-## Static Attributes via Struct Fields
-We considered using explicit fields (e.g., `TelemetryServiceName`, `TelemetryClientVersion`) in `InternalOptions` because it offers strict type safety and enforces a clear contract. We went with **`map[string]string`** because it provides greater flexibility, decoupling the release cycle of `google-cloud-go/auth` from the evolving telemetry requirements of the client generators.
-
-## Dynamic Attributes via Transport Reflection
-We considered having `grpctransport` use reflection to find fields named "name" or "parent" because it would centralize logic in the transport layer. We went with **Generated Interceptors/Logic** because generated code knows the exact types and fields at compile time, making the extraction significantly more performant, type-safe, and robust against schema changes compared to runtime reflection.
+        *   **Error Attributes (`HandleRPC`):** The wrapper implements `HandleRPC` to inspect the final status of the call. It explicitly sets:
+            *   `error.type`: The canonical gRPC status code in UPPER_CASE (e.g., "UNAVAILABLE").
+            *   `grpc.status`: The same upper-case code.
+            *   `status.message`: The descriptive error message extracted via `status.Convert(err).Message()`.
+    
+    # Validation & Maturity Plan
+    
+    To move this feature from **EXPERIMENTAL** (Feature Gated) to **STABLE** (Default Enabled), the following validation steps must be completed.
+    
+    ## 1. Unit Testing (Coverage)
+    *   **Goal:** Ensure that all behavior complies with the functional requirements and design.
+    *   **Scope:**
+        *   **Gating:** Verify that no behavioral changes occur when `GOOGLE_SDK_GO_EXPERIMENTAL_TRACING` is unset or false.
+        *   **Total Disable:** Verify that `option.WithTelemetryDisabled()` (propagated via `Options.DisableTelemetry`) correctly suppresses ALL OpenTelemetry spans, overriding any feature flag settings.
+        *   **Enrichment:** Verify that spans contain `gcp.client.*`, `gcp.resource.name`, `gcp.grpc.resend_count` and all other expected attributes when enabled.
+        *   **Error Handling:** Verify `error.type`, `grpc.status` (UPPER_CASE), and `status.message` are set correctly on failure.
+        *   **Generators:** Verify `gapic-generator-go` emits the correct conditional logic for metadata injection.
+    
+    ## 2. GAPIC Integration Testing (End-to-End)
+    *   **Goal:** Verify that `url.template` and `gcp.resource.name` extraction works correctly for real Google Cloud APIs.
+    *   **Action:**
+        *   Select a representative set of GAPIC clients (e.g., `apigeeconnect`, `datacatalog`, `kms`, `texttospeech`).
+        *   Regenerate these clients using the updated generator.
+        *   Run integration tests with the feature flag enabled.
+        *   Inspect the generated spans (using a mock collector or the Cloud Trace exporter) to confirm `url.template` and `gcp.resource.name` match the expected format.
+    
+    ## 3. Conformance Testing
+    *   **Goal:** Ensure attributes adhere strictly to the Semantic Conventions defined in the [Tracing Requirements for Go Client Libraries](tracing-requirements-for-go-client-libraries.md).
+    *   **Action:**
+        *   Manually audit that all expected attribute keys and values are present.
+        *   Verify that default attributes appear on both spans (and metrics, when implemented).
+    
+    ## 4. Performance Benchmarking
+    *   **Goal:** Ensure the overhead of the transport wrappers and metadata injection is negligible.
+    *   **Action:**
+        *   Benchmark the **Transport Wrappers** (`grpctransport.otelHandler` and `httptransport.otelAttributeTransport`) to measure the specific cost of attribute injection, error inspection (reflection), and string manipulation.
+        *   Run **End-to-End Client Benchmarks** (Generated Client -> Mock Server) to measure the cumulative latency and allocation overhead of the entire feature chain.
+        *   Compare CPU and Memory allocation with the feature flag **Enabled** vs **Disabled**.
+        *   Target: < 1% increase in latency/allocations for high-frequency RPCs (baseline to be established via existing benchmarks).
+    
+    ## 5. Interoperability Verification
+    *   **Goal:** Ensure the library plays nicely with user-configured OpenTelemetry environments.
+    *   **Action:**
+        *   Verify behavior when the user configures the **Global TracerProvider** (via `otel.SetTracerProvider`) with custom sampling or exporters.
+        *   Verify that `gcp.*` attributes are correctly exported to a non-Google backend.
+    
+    ## 6. Backwards Compatibility Check
+    *   **Goal:** Ensure zero regression for users not using OpenTelemetry.
+    *   **Action:**
+        *   Verify that the library behaves identically to the previous version when the feature flag is disabled (the default).
+        *   Verify that the library behaves identically to the previous version when all telemetry is disabled.
+        *   Ensure no panic/crash occurs if OTel SDKs are not initialized or configured.
+    
+    # Alternatives Considered
+    
+    ## Use `apierror` for Status Message Extraction
+    We considered using `gax-go/v2/apierror` to extract `status.message` because it provides unified logic for parsing both gRPC and HTTP errors into a consistent format.
+    *   **Pros:** Ensures the message format matches exactly what users see when inspecting errors with `apierror`.
+    *   **Cons:** `apierror` performs eager parsing of `Any` protobuf messages (error details) which involves significant overhead (allocations, reflection).
+    *   **Decision:** We chose **Direct Extraction** to minimize performance impact on the hot path.
+        *   **gRPC:** Use `status.Convert(err).Message()`.
+        *   **HTTP:** Type assert `*googleapi.Error` and use `.Message`, falling back to `.Error()`.
+    
+    ## Static Attributes via Struct Fields
+    We considered using explicit fields (e.g., `TelemetryServiceName`, `TelemetryClientVersion`) in `InternalOptions` because it offers strict type safety and enforces a clear contract. We went with **`map[string]string`** because it provides greater flexibility, decoupling the release cycle of `google-cloud-go/auth` from the evolving telemetry requirements of the client generators.
+    
+    ## Dynamic Attributes via Transport Reflection
+    We considered having `grpctransport` use reflection to find fields named "name" or "parent" because it would centralize logic in the transport layer. We went with **Generated Interceptors/Logic** because generated code knows the exact types and fields at compile time, making the extraction significantly more performant, type-safe, and robust against schema changes compared to runtime reflection.
+    
