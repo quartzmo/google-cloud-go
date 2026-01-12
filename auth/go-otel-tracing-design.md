@@ -236,14 +236,16 @@ The transport layer cannot know about specific API fields (like `req.Parent` vs 
     *   **Compatibility:** This is strictly additive via context/metadata.
 2.  **`google-cloud-go/auth` (This Repo):**
     *   **Dynamic Attributes (`TagRPC`):** The `stats.Handler` wrapper reads metadata (`gcp.resource.name`, `resend_count`) and sets attributes on span creation.
-        *   **Error Attributes (`HandleRPC`):** The wrapper implements `HandleRPC` to inspect the final status of the call. It explicitly sets:
-            *   `error.type`: The canonical gRPC status code in UPPER_CASE (e.g., "UNAVAILABLE").
-            *   `grpc.status`: The same upper-case code.
-            *   `status.message`: The descriptive error message extracted via `status.Convert(err).Message()`.
-    
-    # Validation & Maturity Plan
-    
-    To move this feature from **EXPERIMENTAL** (Feature Gated) to **STABLE** (Default Enabled), the following validation steps must be completed.
+            *   **Error Attributes (`HandleRPC`):** The wrapper implements `HandleRPC` to inspect the final status of the call. It explicitly sets:
+                *   `error.type`: The canonical gRPC status code in UPPER_CASE (e.g., "UNAVAILABLE").
+                *   `grpc.status`: The same upper-case code.
+                *   `status.message`: The descriptive error message extracted via `status.Convert(err).Message()`.
+            *   **HTTP Error Attributes (`RoundTrip`):** The `otelAttributeTransport` wrapper inspects `err` and `resp` after the call returns.
+                *   `error.type`: The HTTP status code string (e.g., "503") if `resp.StatusCode >= 400`. If a network error occurs (non-nil `err`), set to "ERROR".
+                *   `status.message`: The descriptive error message. If `*googleapi.Error`, use `.Message`. Otherwise use `resp.Status` or `err.Error()`.
+        
+        # Validation & Maturity Plan
+            To move this feature from **EXPERIMENTAL** (Feature Gated) to **STABLE** (Default Enabled), the following validation steps must be completed.
     
     ## 1. Unit Testing (Coverage)
     *   **Goal:** Ensure that all behavior complies with the functional requirements and design.
@@ -304,4 +306,7 @@ The transport layer cannot know about specific API fields (like `req.Parent` vs 
     
     ## Dynamic Attributes via Transport Reflection
     We considered having `grpctransport` use reflection to find fields named "name" or "parent" because it would centralize logic in the transport layer. We went with **Generated Interceptors/Logic** because generated code knows the exact types and fields at compile time, making the extraction significantly more performant, type-safe, and robust against schema changes compared to runtime reflection.
+    
+    ## Context Value vs. Metadata for Attribute Propagation
+    We considered using `context.WithValue` to propagate attributes like `gcp.resource.name` from the generated client to the transport layer because it is the standard Go mechanism for out-of-band data propagation. We went with **Outgoing Context Metadata** (string keys) because context values require shared, unexported key types that would introduce rigid dependency coupling, whereas metadata relies on string keys that act as a loose contract without requiring shared imports.
     
