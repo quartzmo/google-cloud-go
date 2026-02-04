@@ -24,17 +24,26 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"cloud.google.com/go/auth"
 	"cloud.google.com/go/auth/credentials"
 	"cloud.google.com/go/auth/internal"
 	"cloud.google.com/go/auth/internal/transport"
 	"cloud.google.com/go/auth/internal/transport/headers"
+	"github.com/googleapis/gax-go/v2"
+	"github.com/googleapis/gax-go/v2/callctx"
 	"github.com/googleapis/gax-go/v2/internallog"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	grpccreds "google.golang.org/grpc/credentials"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/stats"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -198,7 +207,7 @@ type InternalOptions struct {
 	// service.
 	DefaultScopes []string
 	// SkipValidation bypasses validation on Options. It should only be used
-	// internally for clients that needs more control over their transport.
+	// internally for clients that need more control over their transport.
 	SkipValidation bool
 	// TelemetryAttributes specifies a map of telemetry attributes to be added
 	// to all OpenTelemetry signals, such as tracing and metrics, for purposes
@@ -430,5 +439,74 @@ func addOpenTelemetryStatsHandler(dialOpts []grpc.DialOption, opts *Options) []g
 	if opts.DisableTelemetry {
 		return dialOpts
 	}
-	return append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	if !gax.IsFeatureEnabled("TRACING") {
+		return append(dialOpts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+	}
+	var attrs []attribute.KeyValue
+	if opts.InternalOptions != nil {
+		for k, v := range opts.InternalOptions.TelemetryAttributes {
+			attrs = append(attrs, attribute.String(k, v))
+		}
+	}
+	otelOpts := []otelgrpc.Option{
+		otelgrpc.WithSpanAttributes(attrs...),
+	}
+	return append(dialOpts, grpc.WithStatsHandler(&otelHandler{
+		Handler: otelgrpc.NewClientHandler(otelOpts...),
+	}))
+}
+
+// otelHandler is a wrapper around the OpenTelemetry gRPC client handler that
+// adds custom Google Cloud-specific attributes to spans and metrics.
+type otelHandler struct {
+	stats.Handler
+}
+
+// TagRPC intercepts the RPC start to extract dynamic attributes like resource
+// name and retry count from the outgoing context metadata and attach them to
+// the current span.
+func (h *otelHandler) TagRPC(ctx context.Context, info *stats.RPCTagInfo) context.Context {
+	ctx = h.Handler.TagRPC(ctx, info)
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return ctx
+	}
+	if resName, ok := callctx.TelemetryFromContext(ctx, "resource_name"); ok {
+		span.SetAttributes(attribute.String("gcp.resource.name", resName))
+	}
+	if resendCountStr, ok := callctx.TelemetryFromContext(ctx, "resend_count"); ok {
+		if count, err := strconv.Atoi(resendCountStr); err == nil {
+			span.SetAttributes(attribute.Int("gcp.grpc.resend_count", count))
+		}
+	}
+	return ctx
+}
+
+// HandleRPC intercepts the RPC completion to capture and format error-related
+// attributes ensuring they conform to Google Cloud observability standards.
+func (h *otelHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
+	end, ok := s.(*stats.End)
+	if !ok || end.Error == nil {
+		h.Handler.HandleRPC(ctx, s)
+		return
+	}
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		h.Handler.HandleRPC(ctx, s)
+		return
+	}
+	// Extract status code and message
+	st, _ := status.FromError(end.Error)
+	span.SetAttributes(
+		attribute.String("error.type", strings.ToUpper(st.Code().String())),
+		attribute.String("status.message", st.Message()),
+		attribute.String("grpc.status", strings.ToUpper(st.Code().String())),
+		attribute.String("exception.type", fmt.Sprintf("%T", end.Error)),
+	)
+	if md, ok := metadata.FromOutgoingContext(ctx); ok {
+		if v := md[":authority"]; len(v) > 0 {
+			span.SetAttributes(attribute.String("url.domain", v[0]))
+		}
+	}
+	h.Handler.HandleRPC(ctx, s)
 }
